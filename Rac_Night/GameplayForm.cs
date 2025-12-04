@@ -17,14 +17,14 @@ namespace Rac_Night
             this.WindowState = FormWindowState.Maximized;
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape)
-            {
-                this.Close();
-            }
-        }
+        //protected override void OnKeyDown(KeyEventArgs e)
+        //{
+        //    base.OnKeyDown(e);
+        //    if (e.KeyCode == Keys.Escape)
+        //    {
+            
+        //    }
+        //}
 
         private void pictureBox1_Click(object sender, System.EventArgs e)
         {

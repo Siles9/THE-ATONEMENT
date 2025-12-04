@@ -24,6 +24,7 @@ namespace Rac_Night
         {
             InitializeComponent();
             InitializeMenuUI();
+
         }
 
         private void InitializeMenuUI()
