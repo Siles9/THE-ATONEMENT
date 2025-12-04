@@ -34,12 +34,15 @@
             //
             // pbRaccoonRoomBackground
             //
-            this.pbRaccoonRoomBackground.BackColor = System.Drawing.Color.Transparent;
+            this.pbRaccoonRoomBackground.BackColor = System.Drawing.Color.White; // Фон для комнаты енота (чтобы заполнить прозрачные участки)
             this.pbRaccoonRoomBackground.Image = global::Rac_Night.Properties.Resources.комната_енота; // <<<< УБЕДИТЕСЬ, ЧТО ИМЯ РЕСУРСА ПРАВИЛЬНОЕ
-            this.pbRaccoonRoomBackground.Location = new System.Drawing.Point(100, 100); // <<<< ВАЖНО: ЭТИ КООРДИНАТЫ НУЖНО НАСТРОИТЬ ВРУЧНУЮ
+
+            // Новые Location и Size для комнаты енота
+            // Рассчитано для формы 1280x720, чтобы комната енота вписалась в экран монитора
+            this.pbRaccoonRoomBackground.Location = new System.Drawing.Point(33, 33);
             this.pbRaccoonRoomBackground.Name = "pbRaccoonRoomBackground";
-            this.pbRaccoonRoomBackground.Size = new System.Drawing.Size(600, 400); // <<<< ВАЖНО: ЭТОТ РАЗМЕР НУЖНО НАСТРОИТЬ ВРУЧНУЮ
-            this.pbRaccoonRoomBackground.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pbRaccoonRoomBackground.Size = new System.Drawing.Size(1214, 640);
+            this.pbRaccoonRoomBackground.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage; // Растягивает изображение, чтобы оно заполнило весь PictureBox
             this.pbRaccoonRoomBackground.TabIndex = 0;
             this.pbRaccoonRoomBackground.TabStop = false;
             //
@@ -47,18 +50,23 @@
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackgroundImage = global::Rac_Night.Properties.Resources.Экран_Планшет; // <<<< УБЕДИТЕСЬ, ЧТО ИМЯ РЕСУРСА ПРАВИЛЬНОЕ
-            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.ClientSize = new System.Drawing.Size(1400, 1200); // <<<< ВАЖНО: ЭТОТ РАЗМЕР НУЖНО НАСТРОИТЬ ПОД "Экран_Планшет"
+
+            // ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ: Устанавливаем Монитор как фоновое изображение формы
+            this.BackgroundImage = global::Rac_Night.Properties.Resources.Монитор; // <<<< УБЕДИТЕСЬ, ЧТО ИМЯ РЕСУРСА ПРАВИЛЬНОЕ
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch; // Растягиваем монитор на всю форму
+
+            // Новый размер формы: 1280x720 (сохраняет пропорции 16:9 Монитора, но не на весь экран)
+            this.ClientSize = new System.Drawing.Size(1280, 720);
+
             this.ControlBox = false; // Убирает системные кнопки закрытия, минимизации
             this.Controls.Add(this.pbRaccoonRoomBackground);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None; // Убирает рамки
-            this.KeyPreview = true; // Позволяет форме перехватывать нажатия клавиш
+            this.KeyPreview = true; // Позволяет форме перехватывать нажатия клавиш (для Esc)
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "PcTamagochiForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen; // Открывается по центру экрана
-            this.Text = "Tamagochi Tablet"; // Заголовок (не будет виден из-за FormBorderStyle.None)
+            this.Text = "Tamagochi Monitor"; // Заголовок (не будет виден из-за FormBorderStyle.None)
             ((System.ComponentModel.ISupportInitialize)(this.pbRaccoonRoomBackground)).EndInit();
             this.ResumeLayout(false);
 
