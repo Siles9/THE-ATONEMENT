@@ -13,7 +13,6 @@ namespace Rac_Night
 
         private void SetupFullscreenBorderless()
         {
-            this.BackColor = Color.Black;
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
         }
@@ -26,5 +25,12 @@ namespace Rac_Night
                 this.Close();
             }
         }
+
+        private void pictureBox1_Click(object sender, System.EventArgs e)
+        {
+            PcTamagochiForm tamagochiScreen = new PcTamagochiForm();
+            tamagochiScreen.ShowDialog();
+        }
+
     }
 }

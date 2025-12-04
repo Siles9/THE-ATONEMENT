@@ -15,8 +15,11 @@ namespace Rac_Night
             Application.SetCompatibleTextRenderingDefault(false);
 
             // Создаем и показываем MenuForm.
-            MenuForm menuForm = new MenuForm();
-            menuForm.Show();
+            //MenuForm menuForm = new MenuForm();
+            //menuForm.Show();
+
+            GameplayForm gameplayForm = new GameplayForm();
+            gameplayForm.Show();
 
             Application.Run();
         }
