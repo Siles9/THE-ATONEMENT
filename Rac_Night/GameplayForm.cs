@@ -13,10 +13,10 @@ namespace Rac_Night
 
         private void SetupFullscreenBorderless()
         {
-            this.Text = "Rac Night - Gameplay"; // Название окна
-            this.BackColor = Color.Black; // Фоновый цвет (по желанию)
-            this.FormBorderStyle = FormBorderStyle.None; // Без рамки
-            this.WindowState = FormWindowState.Maximized; // Максимальный размер (полноэкранный)
+            this.Text = "Rac Night - Gameplay";
+            this.BackColor = Color.Black;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.WindowState = FormWindowState.Maximized;
 
             Label gameplayLabel = new Label();
             gameplayLabel.Text = "Это форма GameplayForm!\nДобро пожаловать в игру!";
@@ -27,7 +27,6 @@ namespace Rac_Night
             this.Controls.Add(gameplayLabel);
         }
 
-        // Чтобы выйти из игры, когда GameplayForm активна, можно добавить обработчик клавиш, например, для Esc:
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
