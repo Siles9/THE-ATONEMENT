@@ -139,7 +139,34 @@
   <data name="комната_енота" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\комната_scaled_8x_pngcrushed.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Монитор" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Монитор.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="монитор" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\монитор.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_happy" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_happy.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_hungry" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_hungry.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_sick" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_sick.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_bored" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_bored.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_dirty" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_dirty.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_playing_anim" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_playing_anim.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_washing_anim" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_washing_anim.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_feeding_anim" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_feeding_anim.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="raccoon_healing_anim" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\raccoon_healing_anim.gif;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

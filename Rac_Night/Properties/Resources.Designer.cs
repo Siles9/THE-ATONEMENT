@@ -90,6 +90,96 @@ namespace Rac_Night.Properties {
         }
         
         /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_bored {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_bored", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_dirty {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_dirty", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_feeding_anim {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_feeding_anim", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_happy {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_happy", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_healing_anim {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_healing_anim", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_hungry {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_hungry", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_playing_anim {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_playing_anim", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_sick {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_sick", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap raccoon_washing_anim {
+            get {
+                object obj = ResourceManager.GetObject("raccoon_washing_anim", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
         /// </summary>
         internal static System.IO.UnmanagedMemoryStream TextSound {
@@ -121,9 +211,9 @@ namespace Rac_Night.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Монитор {
+        internal static System.Drawing.Bitmap монитор {
             get {
-                object obj = ResourceManager.GetObject("Монитор", resourceCulture);
+                object obj = ResourceManager.GetObject("монитор", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

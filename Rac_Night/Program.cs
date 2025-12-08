@@ -14,7 +14,7 @@ namespace Rac_Night
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-
+            var gm = GameManager.Instance;
             //Application.Run(new MenuForm());
             Application.Run(new GameplayForm());
         }

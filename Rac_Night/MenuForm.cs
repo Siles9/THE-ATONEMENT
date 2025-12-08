@@ -30,7 +30,7 @@ namespace Rac_Night
         private void InitializeMenuUI()
         {
             // Настройка формы
-            this.Text = "Меню игры: Искупление питомца";
+            this.Text = "Меню";
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
             this.BackColor = Color.FromArgb(135, 206, 250);
