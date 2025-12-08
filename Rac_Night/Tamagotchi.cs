@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Reflection;
 
 namespace Rac_Night
 {
@@ -42,13 +40,24 @@ namespace Rac_Night
         public event EventHandler StatsChanged;
         public event EventHandler SicknessStatusChanged;
 
-        // Очень быстрое падение
-        private const double HungerDecayPerMinute = 12.0;    // Очень быстро
-        private const double PlayDecayPerMinute = 9.0;       // Очень быстро
-        private const double HygieneDecayPerMinute = 7.5;    // Очень быстро
-        private const double HealthDecayPerMinute = 0.05;    // Почти не тратится
+        private const double HungerDecayPerMinute = 4.2;
+        private const double PlayDecayPerMinute = 3.5;
+        private const double HygieneDecayPerMinute = 2.8;
+        private const double HealthDecayPerMinute = 0.00;
 
         private const double CriticalDecayMultiplier = 1.15; // +15% при критическом состоянии
+
+        // Метод для сброса состояния
+        public void Reset()
+        {
+            _hunger = 100;
+            _play = 100;
+            _hygiene = 100;
+            _health = 100;
+            IsSick = false;
+            ZeroStatCount = 0;
+            OnStatsChanged();
+        }
 
         public void Feed(double amount = 50)
         {
