@@ -12,12 +12,11 @@ namespace Rac_Night
         private Label _timeLabel;
         private Panel _blindOverlay;
         private PictureBox _currentGhost;
-        private Panel _flashlightPanel;
+        private PictureBox _flashlightPicture; // PictureBox для фонарика
 
         // Таймеры
         private System.Windows.Forms.Timer _mainGameTimer;
         private System.Windows.Forms.Timer _ghostTimer;
-        private System.Windows.Forms.Timer _flashlightTimer;
 
         // Состояния
         private bool _isFlashlightActive = false;
@@ -34,7 +33,6 @@ namespace Rac_Night
         // Словари для соответствий
         private Dictionary<GhostType, string> _ghostResources;
         private Dictionary<GhostType, string> _ghostWarnings;
-        private Dictionary<GhostType, Color> _ghostColors;
 
         public GameplayForm()
         {
@@ -65,9 +63,9 @@ namespace Rac_Night
         {
             _ghostResources = new Dictionary<GhostType, string>
             {
-                { GhostType.Black, "ghost_black" },
-                { GhostType.Brown, "ghost_brown" },
-                { GhostType.White, "ghost_white" }
+                { GhostType.Black, "чёрный" },
+                { GhostType.Brown, "коричневый" },
+                { GhostType.White, "белый" }
             };
 
             _ghostWarnings = new Dictionary<GhostType, string>
@@ -75,13 +73,6 @@ namespace Rac_Night
                 { GhostType.Black, "ЧЁРНЫЙ ПРИЗРАК ПОЯВИЛСЯ!" },
                 { GhostType.Brown, "КОРИЧНЕВЫЙ ПРИЗРАК ПОЯВИЛСЯ!" },
                 { GhostType.White, "БЕЛЫЙ ПРИЗРАК ПОЯВИЛСЯ!" }
-            };
-
-            _ghostColors = new Dictionary<GhostType, Color>
-            {
-                { GhostType.Black, Color.DarkGray },
-                { GhostType.Brown, Color.SaddleBrown },
-                { GhostType.White, Color.WhiteSmoke }
             };
         }
 
@@ -131,13 +122,14 @@ namespace Rac_Night
             this.Controls.Add(_blindOverlay);
             _blindOverlay.BringToFront();
 
-            // Панель фонарика (изначально скрыта)
-            _flashlightPanel = new Panel();
-            _flashlightPanel.Size = new Size(400, 400);
-            _flashlightPanel.BackColor = Color.Transparent;
-            _flashlightPanel.Visible = false;
-            this.Controls.Add(_flashlightPanel);
-            _flashlightPanel.BringToFront();
+            // PictureBox для фонарика (изначально скрыт)
+            _flashlightPicture = new PictureBox();
+            _flashlightPicture.SizeMode = PictureBoxSizeMode.Zoom;
+            _flashlightPicture.Size = new Size(400, 400);
+            _flashlightPicture.BackColor = Color.Transparent;
+            _flashlightPicture.Visible = false;
+            this.Controls.Add(_flashlightPicture);
+            _flashlightPicture.BringToFront();
 
             // Инструкция внизу экрана
             Label instructionLabel = new Label();
@@ -167,7 +159,7 @@ namespace Rac_Night
             _mainGameTimer.Interval = 1000;
             _mainGameTimer.Tick += (s, e) => {
                 CheckGameConditions();
-                UpdateFlashlightEffect();
+                UpdateFlashlight();
             };
             _mainGameTimer.Start();
         }
@@ -261,7 +253,20 @@ namespace Rac_Night
         {
             _isFlashlightActive = true;
             _flashlightStartTime = DateTime.Now;
-            _flashlightPanel.Visible = true;
+
+            // Загружаем изображение фонарика из ресурсов
+            Image flashlightImage = LoadResourceImage("фонарик");
+            if (flashlightImage != null)
+            {
+                _flashlightPicture.Image = flashlightImage;
+                _flashlightPicture.Visible = true;
+
+                // Позиционируем фонарик по центру экрана
+                _flashlightPicture.Location = new Point(
+                    (this.ClientSize.Width - _flashlightPicture.Width) / 2,
+                    (this.ClientSize.Height - _flashlightPicture.Height) / 2
+                );
+            }
 
             // Обновляем индикатор
             UpdateFlashlightIndicator();
@@ -277,71 +282,43 @@ namespace Rac_Night
                     BanishGhost();
                 }
             }
-
-            // Запускаем таймер для обновления эффекта фонарика
-            if (_flashlightTimer == null)
-            {
-                _flashlightTimer = new System.Windows.Forms.Timer();
-                _flashlightTimer.Interval = 100;
-                _flashlightTimer.Tick += (s, e) => UpdateFlashlightEffect();
-                _flashlightTimer.Start();
-            }
         }
 
         private void DeactivateFlashlight()
         {
             _isFlashlightActive = false;
-            _flashlightPanel.Visible = false;
+            _flashlightPicture.Visible = false;
             _ghostFlashlightCounter = 0; // Сбрасываем счетчик
+
+            // Очищаем изображение фонарика
+            if (_flashlightPicture.Image != null)
+            {
+                _flashlightPicture.Image.Dispose();
+                _flashlightPicture.Image = null;
+            }
 
             // Обновляем индикатор
             UpdateFlashlightIndicator();
-
-            // Останавливаем таймер фонарика
-            if (_flashlightTimer != null)
-            {
-                _flashlightTimer.Stop();
-                _flashlightTimer.Dispose();
-                _flashlightTimer = null;
-            }
         }
 
-        private void UpdateFlashlightEffect()
+        private void UpdateFlashlight()
         {
             if (!_isFlashlightActive) return;
 
-            // Обновляем позицию фонарика (следит за курсором)
-            Point cursorPos = this.PointToClient(Cursor.Position);
-            _flashlightPanel.Location = new Point(
-                cursorPos.X - _flashlightPanel.Width / 2,
-                cursorPos.Y - _flashlightPanel.Height / 2
-            );
-
-            // Создаем эффект фонарика
-            using (Graphics g = _flashlightPanel.CreateGraphics())
+            // Если есть активный призрак, проверяем время свечения
+            if (_isGhostActive && _currentGhost != null)
             {
-                g.Clear(Color.Transparent);
-
-                // Основной луч
-                using (var path = new System.Drawing.Drawing2D.GraphicsPath())
+                TimeSpan flashlightTime = DateTime.Now - _flashlightStartTime;
+                if (flashlightTime.TotalSeconds >= 2 && _ghostFlashlightCounter < 2)
                 {
-                    path.AddEllipse(0, 0, _flashlightPanel.Width, _flashlightPanel.Height);
-                    using (var brush = new System.Drawing.Drawing2D.PathGradientBrush(path))
-                    {
-                        brush.CenterColor = Color.FromArgb(150, 255, 255, 200);
-                        brush.SurroundColors = new[] { Color.Transparent };
-                        g.FillEllipse(brush, 0, 0, _flashlightPanel.Width, _flashlightPanel.Height);
-                    }
+                    _ghostFlashlightCounter = 2;
+                    BanishGhost();
                 }
-
-                // Центральный яркий круг
-                g.FillEllipse(new SolidBrush(Color.FromArgb(100, 255, 255, 255)),
-                    _flashlightPanel.Width / 2 - 30, _flashlightPanel.Height / 2 - 30, 60, 60);
             }
 
             // Обновляем индикатор с временем работы
-            TimeSpan flashlightTime = DateTime.Now - _flashlightStartTime;
-            UpdateFlashlightIndicator(flashlightTime);
+            TimeSpan elapsed = DateTime.Now - _flashlightStartTime;
+            UpdateFlashlightIndicator(elapsed);
         }
 
         private void UpdateFlashlightIndicator(TimeSpan? time = null)
@@ -373,8 +350,8 @@ namespace Rac_Night
             _ghostFlashlightCounter = 0;
 
             // Загружаем изображение призрака из ресурсов
-            string ghostResourceName = GetGhostResourceName(_currentGhostType);
-            Image ghostImage = LoadGhostImage(ghostResourceName);
+            string ghostColorName = GetGhostResourceName(_currentGhostType);
+            Image ghostImage = LoadResourceImage("призрак_" + ghostColorName);
 
             _currentGhost = new PictureBox();
             _currentGhost.SizeMode = PictureBoxSizeMode.Zoom;
@@ -417,10 +394,10 @@ namespace Rac_Night
             {
                 return _ghostResources[ghostType];
             }
-            return "ghost_black"; // fallback
+            return "чёрный"; // fallback
         }
 
-        private Image LoadGhostImage(string resourceName)
+        private Image LoadResourceImage(string resourceName)
         {
             // Пробуем загрузить из ресурсов
             try
@@ -430,56 +407,102 @@ namespace Rac_Night
                 {
                     return image;
                 }
+
+                // Пробуем разные варианты написания
+                string[] variations = {
+                    resourceName,
+                    resourceName.ToLower(),
+                    resourceName.ToUpper(),
+                    resourceName.Replace("ё", "е"), // на случай "чёрный" vs "черный"
+                    resourceName.Replace("_", ""),
+                    resourceName.Replace(" ", "_")
+                };
+
+                foreach (var variation in variations)
+                {
+                    resource = Properties.Resources.ResourceManager.GetObject(variation);
+                    if (resource is Image img)
+                    {
+                        return img;
+                    }
+                }
             }
             catch { }
 
-            // Fallback: создаем цветной круг
-            return CreateFallbackGhost(resourceName);
+            // Fallback: создаем цветное изображение
+            return CreateFallbackImage(resourceName);
         }
 
-        private Image CreateFallbackGhost(string ghostType)
+        private Image CreateFallbackImage(string imageName)
         {
             Bitmap bmp = new Bitmap(300, 300);
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.Clear(Color.Transparent);
 
-                // Определяем цвет призрака
-                Color ghostColor = Color.DarkGray; // По умолчанию
-                if (ghostType.Contains("black"))
+                // Определяем цвет в зависимости от названия
+                Color mainColor = Color.DarkGray;
+                string displayText = imageName;
+
+                if (imageName.Contains("фонарик") || imageName.Contains("flashlight"))
                 {
-                    ghostColor = Color.DarkGray;
+                    mainColor = Color.Yellow;
+                    displayText = "ФОНАРИК";
+
+                    // Рисуем фонарик
+                    g.FillRectangle(new SolidBrush(Color.DarkGray), 140, 100, 20, 150);
+                    g.FillEllipse(new SolidBrush(Color.Yellow), 100, 70, 100, 100);
+                    g.FillEllipse(new SolidBrush(Color.White), 120, 90, 60, 60);
                 }
-                else if (ghostType.Contains("brown"))
+                else if (imageName.Contains("чёрный") || imageName.Contains("черный") || imageName.Contains("black"))
                 {
-                    ghostColor = Color.SaddleBrown;
+                    mainColor = Color.Black;
+                    displayText = "ПРИЗРАК";
+
+                    // Рисуем призрака
+                    g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        g.FillEllipse(new SolidBrush(mainColor), 30 + i * 40, 180, 60, 40);
+                    }
+                    g.FillEllipse(Brushes.Red, 110, 100, 30, 40);
+                    g.FillEllipse(Brushes.Red, 160, 100, 30, 40);
                 }
-                else if (ghostType.Contains("white"))
+                else if (imageName.Contains("коричневый") || imageName.Contains("brown"))
                 {
-                    ghostColor = Color.WhiteSmoke;
+                    mainColor = Color.SaddleBrown;
+                    displayText = "ПРИЗРАК";
+
+                    // Рисуем призрака
+                    g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        g.FillEllipse(new SolidBrush(mainColor), 30 + i * 40, 180, 60, 40);
+                    }
+                    g.FillEllipse(Brushes.Red, 110, 100, 30, 40);
+                    g.FillEllipse(Brushes.Red, 160, 100, 30, 40);
                 }
-
-                // Призрак (силуэт)
-                g.FillEllipse(new SolidBrush(ghostColor), 50, 50, 200, 150);
-
-                // "Подол" призрака
-                for (int i = 0; i < 5; i++)
+                else if (imageName.Contains("белый") || imageName.Contains("white"))
                 {
-                    g.FillEllipse(new SolidBrush(ghostColor), 30 + i * 40, 180, 60, 40);
+                    mainColor = Color.WhiteSmoke;
+                    displayText = "ПРИЗРАК";
+
+                    // Рисуем призрака
+                    g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        g.FillEllipse(new SolidBrush(mainColor), 30 + i * 40, 180, 60, 40);
+                    }
+                    g.FillEllipse(Brushes.Red, 110, 100, 30, 40);
+                    g.FillEllipse(Brushes.Red, 160, 100, 30, 40);
                 }
 
-                // Глаза
-                g.FillEllipse(Brushes.Red, 110, 100, 30, 40);
-                g.FillEllipse(Brushes.Red, 160, 100, 30, 40);
-
-                // Надпись
-                string displayName = "";
-                if (ghostType.Contains("black")) displayName = "ЧЁРНЫЙ";
-                else if (ghostType.Contains("brown")) displayName = "КОРИЧНЕВЫЙ";
-                else if (ghostType.Contains("white")) displayName = "БЕЛЫЙ";
-
-                g.DrawString(displayName, new Font("Arial", 16, FontStyle.Bold),
-                    Brushes.White, 80, 230);
+                // Добавляем текст
+                if (!imageName.Contains("фонарик"))
+                {
+                    g.DrawString(displayText, new Font("Arial", 16, FontStyle.Bold),
+                        Brushes.White, 100, 230);
+                }
             }
             return bmp;
         }
@@ -511,27 +534,25 @@ namespace Rac_Night
 
             fadeTimer.Tick += (s, e) =>
             {
-                if (_currentGhost != null)
+                if (_currentGhost != null && _currentGhost.Image != null)
                 {
                     using (Bitmap bmp = new Bitmap(_currentGhost.Width, _currentGhost.Height))
                     using (Graphics g = Graphics.FromImage(bmp))
                     {
                         g.Clear(Color.Transparent);
-                        if (_currentGhost.Image != null)
-                        {
-                            var matrix = new System.Drawing.Imaging.ColorMatrix();
-                            matrix.Matrix33 = alpha / 255f;
 
-                            var attributes = new System.Drawing.Imaging.ImageAttributes();
-                            attributes.SetColorMatrix(matrix);
+                        var matrix = new System.Drawing.Imaging.ColorMatrix();
+                        matrix.Matrix33 = alpha / 255f;
 
-                            g.DrawImage(_currentGhost.Image,
-                                new Rectangle(0, 0, _currentGhost.Width, _currentGhost.Height),
-                                0, 0, _currentGhost.Image.Width, _currentGhost.Image.Height,
-                                GraphicsUnit.Pixel, attributes);
-                        }
+                        var attributes = new System.Drawing.Imaging.ImageAttributes();
+                        attributes.SetColorMatrix(matrix);
 
-                        _currentGhost.Image?.Dispose();
+                        g.DrawImage(_currentGhost.Image,
+                            new Rectangle(0, 0, _currentGhost.Width, _currentGhost.Height),
+                            0, 0, _currentGhost.Image.Width, _currentGhost.Image.Height,
+                            GraphicsUnit.Pixel, attributes);
+
+                        _currentGhost.Image.Dispose();
                         _currentGhost.Image = (Image)bmp.Clone();
                     }
                 }
@@ -738,12 +759,6 @@ namespace Rac_Night
                 _ghostTimer.Dispose();
             }
 
-            if (_flashlightTimer != null)
-            {
-                _flashlightTimer.Stop();
-                _flashlightTimer.Dispose();
-            }
-
             GameManager.Instance.StopGame();
         }
 
@@ -761,6 +776,12 @@ namespace Rac_Night
             {
                 _currentGhost.Image?.Dispose();
                 _currentGhost.Dispose();
+            }
+
+            if (_flashlightPicture != null)
+            {
+                _flashlightPicture.Image?.Dispose();
+                _flashlightPicture.Dispose();
             }
 
             if (_tamagochiScreen != null)
