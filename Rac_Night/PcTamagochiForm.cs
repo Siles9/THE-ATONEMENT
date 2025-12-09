@@ -10,7 +10,7 @@ namespace Rac_Night
         private Tamagotchi _tama;
         private PictureBox pictureBoxRaccoon;
         private ProgressBar progressBarHunger, progressBarPlay, progressBarHygiene, progressBarHealth;
-        private Label lblHungerValue, lblPlayValue, lblHygieneValue, lblHealthValue; // Лейблы значений
+        private Label lblHungerValue, lblPlayValue, lblHygieneValue, lblHealthValue;
         private Button btnFeed, btnPlay, btnWash, btnCure;
         private Label lblSicknessTimer;
         private Label lblMedicines;

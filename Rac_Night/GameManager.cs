@@ -31,6 +31,11 @@ namespace Rac_Night
         private DateTime _lastUpdateTime;
         private System.Windows.Forms.Timer _gameTimer;
 
+        // Константы для настройки времени
+        private const int NIGHT_START_HOUR = 0;   // 00:00
+        private const int NIGHT_END_HOUR = 6;     // 06:00
+        private const int GAME_MINUTES_PER_SECOND = 2; // 2 минуты игры за 1 секунду реального времени
+
         // Свойства
         public Tamagotchi CurrentTamagotchi => _currentTamagotchi;
 
@@ -62,9 +67,51 @@ namespace Rac_Night
 
         public bool IsSicknessTimerActive => _isSicknessTimerActive;
 
+        // Новые свойства для времени
+        public bool IsNightTime
+        {
+            get
+            {
+                int hour = CurrentGameTime.Hours;
+                return hour >= NIGHT_START_HOUR && hour < NIGHT_END_HOUR;
+            }
+        }
+
+        public bool IsDangerTime
+        {
+            get
+            {
+                int hour = CurrentGameTime.Hours;
+                return hour >= 2 && hour < 4; // Самые опасные часы с 2 до 4 утра
+            }
+        }
+
+        public TimeSpan TimeUntilMorning
+        {
+            get
+            {
+                TimeSpan current = CurrentGameTime;
+                TimeSpan morning = TimeSpan.FromHours(NIGHT_END_HOUR);
+
+                if (current < morning)
+                    return morning - current;
+                else
+                    return TimeSpan.Zero;
+            }
+        }
+
+        public bool IsNightOver
+        {
+            get
+            {
+                return CurrentGameTime.Hours >= NIGHT_END_HOUR;
+            }
+        }
+
         // События
         public event EventHandler GameTimeUpdated;
         public event EventHandler MedicinesUpdated;
+        public event EventHandler NightEnded;
 
         private GameManager()
         {
@@ -78,7 +125,7 @@ namespace Rac_Night
 
             // Запускаем таймер времени игры
             _gameTimer = new System.Windows.Forms.Timer();
-            _gameTimer.Interval = 1000; // Обновляем каждую секунду
+            _gameTimer.Interval = 1000; // Обновляем каждую секунду реального времени
             _gameTimer.Tick += (s, e) => UpdateGameTime();
             _gameTimer.Start();
         }
@@ -88,8 +135,8 @@ namespace Rac_Night
             // Создаем нового енота
             _currentTamagotchi = new Tamagotchi();
 
-            // Устанавливаем время на 12:00
-            _currentGameTime = new TimeSpan(12, 0, 0);
+            // Устанавливаем время на 00:00 (начало ночи)
+            _currentGameTime = new TimeSpan(NIGHT_START_HOUR, 0, 0);
 
             // Устанавливаем лекарства
             _medicinesLeft = 3;
@@ -112,17 +159,42 @@ namespace Rac_Night
 
         private void UpdateGameTime()
         {
-            // Добавляем 1 минуту игрового времени каждую секунду реального времени
-            CurrentGameTime = CurrentGameTime.Add(TimeSpan.FromMinutes(1));
+            // Добавляем игровое время
+            CurrentGameTime = CurrentGameTime.Add(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND));
 
-            // Если прошли сутки, сбрасываем на 0:00
-            if (CurrentGameTime.Days > 0)
+            // Проверяем, не закончилась ли ночь
+            if (IsNightOver)
             {
-                CurrentGameTime = new TimeSpan(0, CurrentGameTime.Hours, CurrentGameTime.Minutes, CurrentGameTime.Seconds);
+                OnNightEnded();
+                return;
             }
 
             // Уменьшаем параметры енота каждую минуту игрового времени
-            _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(1));
+            _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND));
+
+            // Если енот болен, параметры ухудшаются быстрее
+            if (_currentTamagotchi.IsSick)
+            {
+                _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND * 2));
+            }
+
+            // В опасное время параметры ухудшаются еще быстрее
+            if (IsDangerTime)
+            {
+                _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND));
+            }
+        }
+
+        private void OnNightEnded()
+        {
+            // Останавливаем игровой таймер
+            if (_gameTimer != null && _gameTimer.Enabled)
+            {
+                _gameTimer.Stop();
+            }
+
+            // Вызываем событие окончания ночи
+            NightEnded?.Invoke(this, EventArgs.Empty);
         }
 
         public bool TryUseMedicine()
@@ -143,21 +215,57 @@ namespace Rac_Night
                 _gameTimer = null;
             }
         }
-        public bool IsNightTime
+
+        // Методы для расчета оставшегося времени
+        public int GetRemainingNightMinutes()
         {
-            get
-            {
-                int hour = CurrentGameTime.Hours;
-                return hour >= 0 && hour < 6; // Ночь с 0:00 до 6:00
-            }
+            return (int)TimeUntilMorning.TotalMinutes;
         }
 
-        public bool IsDangerTime
+        public bool IsWarningTime(int minutesBefore)
         {
-            get
+            int remainingMinutes = GetRemainingNightMinutes();
+            return remainingMinutes <= minutesBefore && remainingMinutes > 0;
+        }
+
+        // Метод для получения текстового описания времени
+        public string GetTimeDescription()
+        {
+            int hour = CurrentGameTime.Hours;
+
+            if (hour >= 0 && hour < 2)
+                return "Ранняя ночь";
+            else if (hour >= 2 && hour < 4)
+                return "Полночь";
+            else if (hour >= 4 && hour < 6)
+                return "Предрассветное время";
+            else
+                return "Утро";
+        }
+
+        // Метод для получения цвета времени
+        public System.Drawing.Color GetTimeColor()
+        {
+            int hour = CurrentGameTime.Hours;
+
+            if (hour >= 0 && hour < 2)
+                return System.Drawing.Color.LimeGreen; // Ранняя ночь
+            else if (hour >= 2 && hour < 4)
+                return System.Drawing.Color.Orange;    // Полночь
+            else if (hour >= 4 && hour < 6)
+                return System.Drawing.Color.Red;       // Предрассветное время
+            else
+                return System.Drawing.Color.Gold;      // Утро
+        }
+
+        // Метод для ручного добавления времени (для тестирования)
+        public void AddGameTime(TimeSpan timeToAdd)
+        {
+            CurrentGameTime = CurrentGameTime.Add(timeToAdd);
+
+            if (IsNightOver)
             {
-                int hour = CurrentGameTime.Hours;
-                return hour >= 2 && hour < 4; // Самые опасные часы
+                OnNightEnded();
             }
         }
     }

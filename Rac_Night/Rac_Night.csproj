@@ -153,6 +153,9 @@
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="MenuForm.resx">
+      <DependentUpon>MenuForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="PcTamagochiForm.resx">
       <DependentUpon>PcTamagochiForm.cs</DependentUpon>
     </EmbeddedResource>

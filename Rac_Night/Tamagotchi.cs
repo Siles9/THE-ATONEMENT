@@ -40,9 +40,9 @@ namespace Rac_Night
         public event EventHandler StatsChanged;
         public event EventHandler SicknessStatusChanged;
 
-        private const double HungerDecayPerMinute = 4.2;
-        private const double PlayDecayPerMinute = 3.5;
-        private const double HygieneDecayPerMinute = 2.8;
+        private const double HungerDecayPerMinute = 1.0;
+        private const double PlayDecayPerMinute = 0.9;
+        private const double HygieneDecayPerMinute = 0.8;
         private const double HealthDecayPerMinute = 0.00;
 
         private const double CriticalDecayMultiplier = 1.15; // +15% при критическом состоянии

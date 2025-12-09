@@ -17,8 +17,8 @@ namespace Rac_Night
             var gm = GameManager.Instance;
             GameManager.Instance.ResetGame();
 
-            //Application.Run(new MenuForm());
-            Application.Run(new GameplayForm());
+            Application.Run(new MenuForm());
+            //Application.Run(new GameplayForm());
         }
     }
 }

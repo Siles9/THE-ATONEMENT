@@ -9,10 +9,7 @@ namespace Rac_Night
     public partial class GameplayForm : Form
     {
         private PcTamagochiForm _tamagochiScreen;
-        private Label _timeLabel;
-        private Panel _blindOverlay;
         private PictureBox _currentGhost;
-        private PictureBox _flashlightPicture; // PictureBox для фонарика
 
         // Таймеры
         private System.Windows.Forms.Timer _mainGameTimer;
@@ -34,27 +31,34 @@ namespace Rac_Night
         private Dictionary<GhostType, string> _ghostResources;
         private Dictionary<GhostType, string> _ghostWarnings;
 
+        // Переменные для механики времени
+        private bool _nightEnded = false;
+        private bool _dangerTimeActive = false;
+        private float _currentGhostSpawnChance = 60f;
+        private DateTime _lastHourNotification = DateTime.MinValue;
+
+        // Структура для хранения данных призрака в таймере
+        private class GhostTimerData
+        {
+            public GhostType GhostType { get; set; }
+            public float PowerMultiplier { get; set; }
+        }
+
         public GameplayForm()
         {
             InitializeComponent();
 
-            // Инициализируем словари
             InitializeDictionaries();
-
-            // Показываем инструкции перед началом игры
             ShowInstructions();
-
             SetupFullscreenBorderless();
             InitializeGameUI();
 
-            // Инициализируем форму тамагочи, но не показываем
             _tamagochiScreen = new PcTamagochiForm();
             _tamagochiScreen.FormClosing += TamagochiScreen_FormClosing;
 
-            // Подписка на события GameManager
             GameManager.Instance.GameTimeUpdated += GameManager_GameTimeUpdated;
+            GameManager.Instance.NightEnded += GameManager_NightEnded;
 
-            // Запускаем таймеры
             StartMainGameTimer();
             StartGhostTimer();
         }
@@ -76,6 +80,15 @@ namespace Rac_Night
             };
         }
 
+        private void GameManager_NightEnded(object sender, EventArgs e)
+        {
+            _nightEnded = true;
+            if (_ghostTimer != null)
+            {
+                _ghostTimer.Stop();
+            }
+        }
+
         private void ShowInstructions()
         {
             string instructions =
@@ -85,10 +98,12 @@ namespace Rac_Night
                 "ESC - Выход из игры\n\n" +
                 "ПРАВИЛА:\n" +
                 "1. Следите за параметрами енота в мониторе\n" +
-                "2. Призраки появляются ночью\n" +
-                "3. Чтобы прогнать призрака - светите на него фонариком 2 секунды\n" +
-                "4. Енот может заболеть если 2+ параметра упадут до 0\n" +
-                "5. Цель: пережить ночь до 6 утра\n\n" +
+                "2. Призраки появляются ночью (00:00-06:00)\n" +
+                "3. Частота призраков увеличивается с течением ночи\n" +
+                "4. Чтобы прогнать призрака - светите на него фонариком 2 секунды\n" +
+                "5. Енот может заболеть если 2+ параметра упадут до 0\n" +
+                "6. В опасное время (02:00-04:00) призраки сильнее\n" +
+                "7. Цель: пережить ночь до 6 утра\n\n" +
                 "УДАЧИ!";
 
             MessageBox.Show(instructions, "ИНСТРУКЦИЯ",
@@ -105,50 +120,24 @@ namespace Rac_Night
 
         private void InitializeGameUI()
         {
-            // Label для отображения времени
-            _timeLabel = new Label();
             _timeLabel.Location = new Point(20, 20);
             _timeLabel.ForeColor = Color.Lime;
             _timeLabel.BackColor = Color.Transparent;
             _timeLabel.Font = new Font("Arial", 20, FontStyle.Bold);
             _timeLabel.AutoSize = true;
-            this.Controls.Add(_timeLabel);
 
-            // Оверлей для ослепления
-            _blindOverlay = new Panel();
             _blindOverlay.Dock = DockStyle.Fill;
             _blindOverlay.BackColor = Color.Black;
             _blindOverlay.Visible = false;
             this.Controls.Add(_blindOverlay);
             _blindOverlay.BringToFront();
 
-            // PictureBox для фонарика (изначально скрыт)
-            _flashlightPicture = new PictureBox();
             _flashlightPicture.SizeMode = PictureBoxSizeMode.Zoom;
             _flashlightPicture.Size = new Size(400, 400);
             _flashlightPicture.BackColor = Color.Transparent;
             _flashlightPicture.Visible = false;
             this.Controls.Add(_flashlightPicture);
             _flashlightPicture.BringToFront();
-
-            // Инструкция внизу экрана
-            Label instructionLabel = new Label();
-            instructionLabel.Text = "W - Монитор | F - Фонарик (зажать) | ESC - Выход";
-            instructionLabel.Location = new Point(20, this.Height - 50);
-            instructionLabel.ForeColor = Color.White;
-            instructionLabel.Font = new Font("Arial", 12);
-            instructionLabel.AutoSize = true;
-            this.Controls.Add(instructionLabel);
-
-            // Индикатор фонарика
-            Label flashlightIndicator = new Label();
-            flashlightIndicator.Name = "FlashlightIndicator";
-            flashlightIndicator.Text = "ФОНАРИК: ВЫКЛ";
-            flashlightIndicator.Location = new Point(this.Width - 250, 20);
-            flashlightIndicator.ForeColor = Color.Gray;
-            flashlightIndicator.Font = new Font("Arial", 14, FontStyle.Bold);
-            flashlightIndicator.AutoSize = true;
-            this.Controls.Add(flashlightIndicator);
 
             UpdateGameTimeDisplay();
         }
@@ -160,21 +149,124 @@ namespace Rac_Night
             _mainGameTimer.Tick += (s, e) => {
                 CheckGameConditions();
                 UpdateFlashlight();
+                UpdateTimeEffects();
             };
             _mainGameTimer.Start();
+        }
+
+        private void UpdateTimeEffects()
+        {
+            if (_nightEnded) return;
+
+            int hour = GameManager.Instance.CurrentGameTime.Hours;
+
+            if (_ghostTimer != null && _ghostTimer.Enabled)
+            {
+                if (hour >= 0 && hour < 2)
+                {
+                    _ghostTimer.Interval = 60000;
+                    _currentGhostSpawnChance = 60f;
+                }
+                else if (hour >= 2 && hour < 4)
+                {
+                    _ghostTimer.Interval = 45000;
+                    _currentGhostSpawnChance = 75f;
+
+                    if (!_dangerTimeActive)
+                    {
+                        _dangerTimeActive = true;
+                        ShowTemporaryMessage("ОПАСНОЕ ВРЕМЯ! ПРИЗРАКИ СТАЛИ СИЛЬНЕЕ!", Color.DarkRed, 3000);
+                    }
+                }
+                else if (hour >= 4 && hour < 6)
+                {
+                    _ghostTimer.Interval = 30000;
+                    _currentGhostSpawnChance = 85f;
+                    _dangerTimeActive = false;
+                }
+            }
+
+            CheckTimeWarnings();
+            UpdateGameTimeDisplay();
+        }
+
+        private void CheckTimeWarnings()
+        {
+            int remainingMinutes = GameManager.Instance.GetRemainingNightMinutes();
+
+            if (remainingMinutes <= 30 && remainingMinutes > 20)
+            {
+                ShowTemporaryMessage($"ДО УТРА ОСТАЛОСЬ {remainingMinutes} МИНУТ!", Color.Yellow, 2000);
+            }
+            else if (remainingMinutes <= 20 && remainingMinutes > 10)
+            {
+                ShowTemporaryMessage($"ОСТАЛОСЬ {remainingMinutes} МИНУТ! ПРОДЕРЖИТЕСЬ!", Color.Orange, 2000);
+            }
+            else if (remainingMinutes <= 10 && remainingMinutes > 5)
+            {
+                ShowTemporaryMessage($"ВСЕГО {remainingMinutes} МИНУТ ДО РАССВЕТА!", Color.Red, 2000);
+            }
+            else if (remainingMinutes <= 5 && remainingMinutes > 0)
+            {
+                ShowTemporaryMessage($"ПОСЛЕДНИЕ {remainingMinutes} МИНУТ! ЕЩЁ НЕМНОГО!", Color.DarkRed, 2000);
+            }
+
+            if ((DateTime.Now - _lastHourNotification).TotalSeconds > 30)
+            {
+                int hour = GameManager.Instance.CurrentGameTime.Hours;
+                int minute = GameManager.Instance.CurrentGameTime.Minutes;
+
+                if (minute == 0 && (hour == 1 || hour == 3 || hour == 5))
+                {
+                    string message = "";
+                    if (hour == 1)
+                        message = "ПРОШЁЛ ЧАС НОЧИ. ВСЕГО 5 ЧАСОВ ОСТАЛОСЬ.";
+                    else if (hour == 3)
+                        message = "ПОЛНОЧЬ. САМОЕ ОПАСНОЕ ВРЕМЯ!";
+                    else if (hour == 5)
+                        message = "СКОРО РАССВЕТ! ПОСЛЕДНИЙ ЧАС!";
+
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        ShowTemporaryMessage(message, Color.White, 2500);
+                        _lastHourNotification = DateTime.Now;
+                    }
+                }
+            }
         }
 
         private void StartGhostTimer()
         {
             _ghostTimer = new System.Windows.Forms.Timer();
-            _ghostTimer.Interval = 45000; // Призраки каждые 45 секунд
+            _ghostTimer.Interval = 60000;
             _ghostTimer.Tick += (s, e) => {
-                if (!_isGhostActive && _random.Next(0, 100) > 30) // 70% шанс появления
+                if (!_isGhostActive && !_nightEnded && GameManager.Instance.IsNightTime)
                 {
-                    SpawnGhost();
+                    float chance = _random.Next(0, 100);
+                    if (chance > (100 - _currentGhostSpawnChance))
+                    {
+                        SpawnGhost();
+                    }
                 }
             };
             _ghostTimer.Start();
+        }
+
+        private void UpdateGameTimeDisplay()
+        {
+            string timeDescription = GameManager.Instance.GetTimeDescription();
+            Color timeColor = GameManager.Instance.GetTimeColor();
+            int remainingMinutes = GameManager.Instance.GetRemainingNightMinutes();
+
+            _timeLabel.Text = $"НОЧЬ: {GameManager.Instance.CurrentGameTime:hh\\:mm}\n" +
+                             $"{timeDescription} | До утра: {remainingMinutes} мин";
+            _timeLabel.ForeColor = timeColor;
+
+            if (GameManager.Instance.IsDangerTime)
+            {
+                _timeLabel.Text += "\n⚠ ОПАСНОЕ ВРЕМЯ!";
+                _timeLabel.ForeColor = Color.Red;
+            }
         }
 
         private void GameManager_GameTimeUpdated(object sender, EventArgs e)
@@ -189,25 +281,10 @@ namespace Rac_Night
             }
         }
 
-        private void UpdateGameTimeDisplay()
-        {
-            _timeLabel.Text = $"НОЧЬ: {GameManager.Instance.CurrentGameTime:hh\\:mm}";
-
-            // Меняем цвет времени в зависимости от часа
-            int hour = GameManager.Instance.CurrentGameTime.Hours;
-            if (hour >= 0 && hour < 3)
-                _timeLabel.ForeColor = Color.DarkRed;
-            else if (hour >= 3 && hour < 6)
-                _timeLabel.ForeColor = Color.Red;
-            else
-                _timeLabel.ForeColor = Color.Lime;
-        }
-
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
 
-            // W: Показать/Скрыть тамагочи
             if (e.KeyCode == Keys.W)
             {
                 if (!_tamagochiScreen.Visible)
@@ -220,13 +297,11 @@ namespace Rac_Night
                 }
             }
 
-            // F: Включить фонарик (зажать)
             if (e.KeyCode == Keys.F && !_isFlashlightActive)
             {
                 ActivateFlashlight();
             }
 
-            // Esc: Выход
             if (e.KeyCode == Keys.Escape)
             {
                 var result = MessageBox.Show("Выйти из игры?", "Подтверждение",
@@ -242,7 +317,6 @@ namespace Rac_Night
         {
             base.OnKeyUp(e);
 
-            // F: Выключить фонарик (отпустить)
             if (e.KeyCode == Keys.F && _isFlashlightActive)
             {
                 DeactivateFlashlight();
@@ -254,29 +328,20 @@ namespace Rac_Night
             _isFlashlightActive = true;
             _flashlightStartTime = DateTime.Now;
 
-            // Загружаем изображение фонарика из ресурсов
             Image flashlightImage = LoadResourceImage("фонарик");
             if (flashlightImage != null)
             {
                 _flashlightPicture.Image = flashlightImage;
                 _flashlightPicture.Visible = true;
-
-                // Позиционируем фонарик по центру экрана
                 _flashlightPicture.Location = new Point(
                     (this.ClientSize.Width - _flashlightPicture.Width) / 2,
                     (this.ClientSize.Height - _flashlightPicture.Height) / 2
                 );
             }
 
-            // Обновляем индикатор
-            UpdateFlashlightIndicator();
-
-            // Если есть активный призрак, начинаем отсчет
             if (_isGhostActive && _currentGhost != null)
             {
                 _ghostFlashlightCounter++;
-
-                // Если светили 2 секунды на призрака
                 if (_ghostFlashlightCounter >= 2)
                 {
                     BanishGhost();
@@ -288,24 +353,19 @@ namespace Rac_Night
         {
             _isFlashlightActive = false;
             _flashlightPicture.Visible = false;
-            _ghostFlashlightCounter = 0; // Сбрасываем счетчик
+            _ghostFlashlightCounter = 0;
 
-            // Очищаем изображение фонарика
             if (_flashlightPicture.Image != null)
             {
                 _flashlightPicture.Image.Dispose();
                 _flashlightPicture.Image = null;
             }
-
-            // Обновляем индикатор
-            UpdateFlashlightIndicator();
         }
 
         private void UpdateFlashlight()
         {
             if (!_isFlashlightActive) return;
 
-            // Если есть активный призрак, проверяем время свечения
             if (_isGhostActive && _currentGhost != null)
             {
                 TimeSpan flashlightTime = DateTime.Now - _flashlightStartTime;
@@ -315,41 +375,18 @@ namespace Rac_Night
                     BanishGhost();
                 }
             }
-
-            // Обновляем индикатор с временем работы
-            TimeSpan elapsed = DateTime.Now - _flashlightStartTime;
-            UpdateFlashlightIndicator(elapsed);
-        }
-
-        private void UpdateFlashlightIndicator(TimeSpan? time = null)
-        {
-            var indicator = this.Controls.Find("FlashlightIndicator", true);
-            if (indicator.Length > 0 && indicator[0] is Label label)
-            {
-                if (_isFlashlightActive)
-                {
-                    string timeText = time.HasValue ? $" ({time.Value.Seconds}с)" : "";
-                    label.Text = $"ФОНАРИК: ВКЛ{timeText}";
-                    label.ForeColor = Color.Yellow;
-                }
-                else
-                {
-                    label.Text = "ФОНАРИК: ВЫКЛ";
-                    label.ForeColor = Color.Gray;
-                }
-            }
         }
 
         private void SpawnGhost()
         {
-            // Случайно выбираем тип призрака
+            if (_nightEnded || !GameManager.Instance.IsNightTime) return;
+
             Array ghostTypes = Enum.GetValues(typeof(GhostType));
             _currentGhostType = (GhostType)ghostTypes.GetValue(_random.Next(ghostTypes.Length));
 
             _isGhostActive = true;
             _ghostFlashlightCounter = 0;
 
-            // Загружаем изображение призрака из ресурсов
             string ghostColorName = GetGhostResourceName(_currentGhostType);
             Image ghostImage = LoadResourceImage("призрак_" + ghostColorName);
 
@@ -357,7 +394,6 @@ namespace Rac_Night
             _currentGhost.SizeMode = PictureBoxSizeMode.Zoom;
             _currentGhost.Size = new Size(300, 300);
 
-            // Случайная позиция на экране (но не слишком близко к краям)
             int x = _random.Next(100, this.Width - 400);
             int y = _random.Next(100, this.Height - 400);
             _currentGhost.Location = new Point(x, y);
@@ -367,18 +403,26 @@ namespace Rac_Night
             this.Controls.Add(_currentGhost);
             _currentGhost.BringToFront();
 
-            // Показываем предупреждение
             ShowGhostWarning(_currentGhostType);
 
-            // Запускаем таймер для исчезновения призрака (если не прогнать)
+            int despawnTime = GameManager.Instance.IsDangerTime ? 15000 : 10000;
+            float ghostPowerMultiplier = GameManager.Instance.IsDangerTime ? 1.5f : 1.0f;
+
             Timer ghostDespawnTimer = new Timer();
-            ghostDespawnTimer.Interval = 10000; // 10 секунд
-            ghostDespawnTimer.Tag = _currentGhostType;
+            ghostDespawnTimer.Interval = despawnTime;
+
+            // Используем класс вместо кортежа
+            ghostDespawnTimer.Tag = new GhostTimerData
+            {
+                GhostType = _currentGhostType,
+                PowerMultiplier = ghostPowerMultiplier
+            };
+
             ghostDespawnTimer.Tick += (s, e) =>
             {
-                if (_isGhostActive)
+                if (_isGhostActive && ghostDespawnTimer.Tag is GhostTimerData data)
                 {
-                    ExecuteGhostAttack((GhostType)ghostDespawnTimer.Tag);
+                    ExecuteGhostAttack(data.GhostType, data.PowerMultiplier);
                     RemoveGhost();
                 }
                 ghostDespawnTimer.Stop();
@@ -389,17 +433,15 @@ namespace Rac_Night
 
         private string GetGhostResourceName(GhostType ghostType)
         {
-            // Используем dictionary для получения имени ресурса
             if (_ghostResources.ContainsKey(ghostType))
             {
                 return _ghostResources[ghostType];
             }
-            return "чёрный"; // fallback
+            return "чёрный";
         }
 
         private Image LoadResourceImage(string resourceName)
         {
-            // Пробуем загрузить из ресурсов
             try
             {
                 object resource = Properties.Resources.ResourceManager.GetObject(resourceName);
@@ -408,12 +450,11 @@ namespace Rac_Night
                     return image;
                 }
 
-                // Пробуем разные варианты написания
                 string[] variations = {
                     resourceName,
                     resourceName.ToLower(),
                     resourceName.ToUpper(),
-                    resourceName.Replace("ё", "е"), // на случай "чёрный" vs "черный"
+                    resourceName.Replace("ё", "е"),
                     resourceName.Replace("_", ""),
                     resourceName.Replace(" ", "_")
                 };
@@ -429,7 +470,6 @@ namespace Rac_Night
             }
             catch { }
 
-            // Fallback: создаем цветное изображение
             return CreateFallbackImage(resourceName);
         }
 
@@ -440,7 +480,6 @@ namespace Rac_Night
             {
                 g.Clear(Color.Transparent);
 
-                // Определяем цвет в зависимости от названия
                 Color mainColor = Color.DarkGray;
                 string displayText = imageName;
 
@@ -449,7 +488,6 @@ namespace Rac_Night
                     mainColor = Color.Yellow;
                     displayText = "ФОНАРИК";
 
-                    // Рисуем фонарик
                     g.FillRectangle(new SolidBrush(Color.DarkGray), 140, 100, 20, 150);
                     g.FillEllipse(new SolidBrush(Color.Yellow), 100, 70, 100, 100);
                     g.FillEllipse(new SolidBrush(Color.White), 120, 90, 60, 60);
@@ -459,7 +497,6 @@ namespace Rac_Night
                     mainColor = Color.Black;
                     displayText = "ПРИЗРАК";
 
-                    // Рисуем призрака
                     g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
                     for (int i = 0; i < 5; i++)
                     {
@@ -473,7 +510,6 @@ namespace Rac_Night
                     mainColor = Color.SaddleBrown;
                     displayText = "ПРИЗРАК";
 
-                    // Рисуем призрака
                     g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
                     for (int i = 0; i < 5; i++)
                     {
@@ -487,7 +523,6 @@ namespace Rac_Night
                     mainColor = Color.WhiteSmoke;
                     displayText = "ПРИЗРАК";
 
-                    // Рисуем призрака
                     g.FillEllipse(new SolidBrush(mainColor), 50, 50, 200, 150);
                     for (int i = 0; i < 5; i++)
                     {
@@ -497,7 +532,6 @@ namespace Rac_Night
                     g.FillEllipse(Brushes.Red, 160, 100, 30, 40);
                 }
 
-                // Добавляем текст
                 if (!imageName.Contains("фонарик"))
                 {
                     g.DrawString(displayText, new Font("Arial", 16, FontStyle.Bold),
@@ -509,8 +543,7 @@ namespace Rac_Night
 
         private void ShowGhostWarning(GhostType ghostType)
         {
-            // Используем dictionary для предупреждений
-            string warning = "ПРИЗРАК ПОЯВИЛСЯ!"; // По умолчанию
+            string warning = "ПРИЗРАК ПОЯВИЛСЯ!";
 
             if (_ghostWarnings.ContainsKey(ghostType))
             {
@@ -524,10 +557,8 @@ namespace Rac_Night
         {
             if (!_isGhostActive || _currentGhost == null) return;
 
-            // Эффект изгнания
             ShowTemporaryMessage("ПРИЗРАК ИЗГНАН!", Color.Lime, 1500);
 
-            // Анимация исчезновения
             Timer fadeTimer = new Timer();
             fadeTimer.Interval = 50;
             int alpha = 255;
@@ -581,37 +612,41 @@ namespace Rac_Night
             _ghostFlashlightCounter = 0;
         }
 
-        private void ExecuteGhostAttack(GhostType ghostType)
+        private void ExecuteGhostAttack(GhostType ghostType, float powerMultiplier = 1.0f)
         {
-            // Используем классический switch statement
             switch (ghostType)
             {
                 case GhostType.Black:
-                    // Чёрный призрак: атакует монитор
-                    GameManager.Instance.CurrentTamagotchi.DecreaseAllStatsByPercentage(20);
-                    ShowTemporaryMessage("ЧЁРНЫЙ ПРИЗРАК АТАКОВАЛ ЕНОТА!", Color.DarkRed, 2000);
+                    float damagePercentage = 20 * powerMultiplier;
+                    GameManager.Instance.CurrentTamagotchi.DecreaseAllStatsByPercentage((int)damagePercentage);
+                    string damageText = GameManager.Instance.IsDangerTime ?
+                        "ЧЁРНЫЙ ПРИЗРАК СИЛЬНО АТАКОВАЛ ЕНОТА!" :
+                        "ЧЁРНЫЙ ПРИЗРАК АТАКОВАЛ ЕНОТА!";
+                    ShowTemporaryMessage(damageText, Color.DarkRed, 2000);
                     break;
 
                 case GhostType.Brown:
-                    // Коричневый призрак: ослепляет игрока
                     if (!_isBlinded)
                     {
-                        _ = BlindPlayer(4000);
+                        int blindDuration = (int)(4000 * powerMultiplier);
+                        _ = BlindPlayer(blindDuration);
                     }
                     break;
 
                 case GhostType.White:
-                    // Белый призрак: в зависимости от состояния
                     if (_tamagochiScreen.Visible)
                     {
-                        // В мониторе: перезагрузка
-                        _tamagochiScreen.MonitorRestart(5000);
-                        ShowTemporaryMessage("МОНИТОР ПЕРЕЗАГРУЖАЕТСЯ!", Color.White, 2000);
+                        int restartDuration = (int)(5000 * powerMultiplier);
+                        _tamagochiScreen.MonitorRestart(restartDuration);
+                        string restartText = GameManager.Instance.IsDangerTime ?
+                            "МОНИТОР ПЕРЕЗАГРУЖАЕТСЯ ДОЛЬШЕ!" :
+                            "МОНИТОР ПЕРЕЗАГРУЖАЕТСЯ...";
+                        ShowTemporaryMessage(restartText, Color.White, 2000);
                     }
                     else
                     {
-                        // Не в мониторе: отключает фонарик
-                        _ = DisableFlashlight(8000);
+                        int disableDuration = (int)(8000 * powerMultiplier);
+                        _ = DisableFlashlight(disableDuration);
                     }
                     break;
             }
@@ -654,30 +689,45 @@ namespace Rac_Night
 
         private void CheckGameConditions()
         {
-            var tama = GameManager.Instance.CurrentTamagotchi;
-            TimeSpan currentTime = GameManager.Instance.CurrentGameTime;
+            if (_nightEnded) return;
 
-            // Проверка на победу (6:00 утра)
-            if (currentTime.Hours >= 6 && currentTime.Hours < 12)
+            var tama = GameManager.Instance.CurrentTamagotchi;
+
+            if (GameManager.Instance.IsNightOver)
             {
                 StopAllTimers();
-                MessageBox.Show("ПЕРВАЯ НОЧЬ УСПЕШНО ПРОЙДЕНА!\nЕНОТ ЖИВ И ЗДОРОВ!", "ПОБЕДА",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                GameManager.Instance.StopGame();
+
+                string healthStatus;
+                if (tama.Health >= 70)
+                    healthStatus = "ЕНОТ ЖИВ И ЗДОРОВ!";
+                else if (tama.Health >= 40)
+                    healthStatus = "ЕНОТ ВЫЖИЛ, НО ЕМУ НУЖЕН ОТДЫХ";
+                else if (tama.Health >= 20)
+                    healthStatus = "ЕНОТ ЕЛЕ ВЫЖИЛ, НУЖНА ПОМОЩЬ";
+                else
+                    healthStatus = "ЕНОТ В КРИТИЧЕСКОМ СОСТОЯНИИ!";
+
+                MessageBox.Show($"НОЧЬ УСПЕШНО ПРОЙДЕНА!\n\n" +
+                               $"Время выживания: {GameManager.Instance.CurrentGameTime:hh\\:mm}\n" +
+                               $"{healthStatus}",
+                    "ПОБЕДА", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.Close();
                 return;
             }
 
-            // Проверка на проигрыш
             if (tama.Health <= 0)
             {
                 StopAllTimers();
-                MessageBox.Show("ВЫ ПРОИГРАЛИ, ЕНОТИК ПОГИБ.", "ПОРАЖЕНИЕ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                GameManager.Instance.StopGame();
+
+                MessageBox.Show($"ВЫ ПРОИГРАЛИ, ЕНОТИК ПОГИБ.\n\n" +
+                               $"Время выживания: {GameManager.Instance.CurrentGameTime:hh\\:mm}",
+                    "ПОРАЖЕНИЕ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
                 return;
             }
 
-            // Проверка на критическое состояние
             if (tama.IsSick && tama.Health < 15)
             {
                 ShowTemporaryMessage("ЕНОТ В КРИТИЧЕСКОМ СОСТОЯНИИ!", Color.Red, 1000);
@@ -699,11 +749,9 @@ namespace Rac_Night
 
         private async Task DisableFlashlight(int durationMs)
         {
-            DeactivateFlashlight(); // Выключаем фонарик сразу
-
+            DeactivateFlashlight();
             ShowTemporaryMessage("ФОНАРИК ОТКЛЮЧЁН ПРИЗРАКОМ!", Color.Red, 2000);
 
-            // Блокируем фонарик на время
             var originalInterval = _ghostTimer.Interval;
             _ghostTimer.Stop();
 
@@ -711,7 +759,6 @@ namespace Rac_Night
 
             ShowTemporaryMessage("ФОНАРИК СНОВА ДОСТУПЕН", Color.Lime, 1500);
 
-            // Возвращаем нормальный интервал появления призраков
             if (_ghostTimer != null && !_ghostTimer.Enabled)
             {
                 _ghostTimer.Interval = originalInterval;
@@ -766,12 +813,11 @@ namespace Rac_Night
         {
             base.OnFormClosed(e);
 
-            // Отписываемся от событий
             GameManager.Instance.GameTimeUpdated -= GameManager_GameTimeUpdated;
+            GameManager.Instance.NightEnded -= GameManager_NightEnded;
 
             StopAllTimers();
 
-            // Очистка ресурсов
             if (_currentGhost != null)
             {
                 _currentGhost.Image?.Dispose();
