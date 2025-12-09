@@ -48,8 +48,6 @@ namespace Rac_Night
         {
             InitializeComponent();
 
-            InitializeDictionaries();
-            ShowInstructions();
             SetupFullscreenBorderless();
             InitializeGameUI();
 
@@ -57,27 +55,9 @@ namespace Rac_Night
             _tamagochiScreen.FormClosing += TamagochiScreen_FormClosing;
 
             GameManager.Instance.GameTimeUpdated += GameManager_GameTimeUpdated;
-            GameManager.Instance.NightEnded += GameManager_NightEnded;
 
             StartMainGameTimer();
             StartGhostTimer();
-        }
-
-        private void InitializeDictionaries()
-        {
-            _ghostResources = new Dictionary<GhostType, string>
-            {
-                { GhostType.Black, "чёрный" },
-                { GhostType.Brown, "коричневый" },
-                { GhostType.White, "белый" }
-            };
-
-            _ghostWarnings = new Dictionary<GhostType, string>
-            {
-                { GhostType.Black, "ЧЁРНЫЙ ПРИЗРАК ПОЯВИЛСЯ!" },
-                { GhostType.Brown, "КОРИЧНЕВЫЙ ПРИЗРАК ПОЯВИЛСЯ!" },
-                { GhostType.White, "БЕЛЫЙ ПРИЗРАК ПОЯВИЛСЯ!" }
-            };
         }
 
         private void GameManager_NightEnded(object sender, EventArgs e)
@@ -87,27 +67,6 @@ namespace Rac_Night
             {
                 _ghostTimer.Stop();
             }
-        }
-
-        private void ShowInstructions()
-        {
-            string instructions =
-                "УПРАВЛЕНИЕ И ПРАВИЛА:\n\n" +
-                "W - Открыть/Закрыть монитор енота\n" +
-                "F - Зажать для включения фонарика\n" +
-                "ESC - Выход из игры\n\n" +
-                "ПРАВИЛА:\n" +
-                "1. Следите за параметрами енота в мониторе\n" +
-                "2. Призраки появляются ночью (00:00-06:00)\n" +
-                "3. Частота призраков увеличивается с течением ночи\n" +
-                "4. Чтобы прогнать призрака - светите на него фонариком 2 секунды\n" +
-                "5. Енот может заболеть если 2+ параметра упадут до 0\n" +
-                "6. В опасное время (02:00-04:00) призраки сильнее\n" +
-                "7. Цель: пережить ночь до 6 утра\n\n" +
-                "УДАЧИ!";
-
-            MessageBox.Show(instructions, "ИНСТРУКЦИЯ",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void SetupFullscreenBorderless()

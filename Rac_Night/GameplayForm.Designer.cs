@@ -28,24 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this._timeLabel = new System.Windows.Forms.Label();
             this._blindOverlay = new System.Windows.Forms.Panel();
             this._flashlightPicture = new System.Windows.Forms.PictureBox();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this._flashlightPicture)).BeginInit();
             this.SuspendLayout();
-            // 
-            // pictureBox1
-            // 
-            this.pictureBox1.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox1.BackgroundImage = global::Rac_Night.Properties.Resources.Пк;
-            this.pictureBox1.InitialImage = global::Rac_Night.Properties.Resources.Пк;
-            this.pictureBox1.Location = new System.Drawing.Point(238, 630);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(402, 381);
-            this.pictureBox1.TabIndex = 0;
-            this.pictureBox1.TabStop = false;
             // 
             // _timeLabel
             // 
@@ -83,15 +70,13 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackgroundImage = global::Rac_Night.Properties.Resources.Без_имени;
+            this.BackgroundImage = global::Rac_Night.Properties.Resources.Окружение;
             this.ClientSize = new System.Drawing.Size(1904, 1041);
             this.Controls.Add(this._flashlightPicture);
             this.Controls.Add(this._blindOverlay);
             this.Controls.Add(this._timeLabel);
-            this.Controls.Add(this.pictureBox1);
             this.Name = "GameplayForm";
             this.Text = "GameplayForm";
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this._flashlightPicture)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -99,8 +84,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label _timeLabel;
         private System.Windows.Forms.Panel _blindOverlay;
         private System.Windows.Forms.PictureBox _flashlightPicture;

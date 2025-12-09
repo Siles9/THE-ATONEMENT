@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Rac_Night
@@ -104,22 +105,51 @@ namespace Rac_Night
 
         private async void StartNewGame()
         {
-            // Скрываем меню
-            this.Hide();
+            try
+            {
+                // Скрываем меню
+                this.Hide();
 
-            // 1. Показываем катсцену (MainForm)
-            MainForm cutsceneForm = new MainForm();
-            cutsceneForm.ShowDialog();
+                // 1. Показываем катсцену (MainForm)
+                using (MainForm cutsceneForm = new MainForm())
+                {
+                    // Используем Task для асинхронного ожидания
+                    var cutsceneTask = Task.Run(() => cutsceneForm.ShowDialog());
+                    await cutsceneTask;
+                }
 
-            // 2. После завершения катсцены показываем инструкцию
-            ShowGameInstructions();
+                // 2. После закрытия катсцены показываем инструкцию
+                // Используем Task.Run для показа MessageBox в UI потоке
+                await Task.Run(() =>
+                {
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        ShowGameInstructions();
+                    });
+                });
 
-            // 3. Запускаем основную игру
-            GameplayForm gameplayForm = new GameplayForm();
-            gameplayForm.ShowDialog();
+                // 3. Запускаем основную игру (GameplayForm)
+                using (GameplayForm gameplayForm = new GameplayForm())
+                {
+                    var gameplayTask = Task.Run(() => gameplayForm.ShowDialog());
+                    await gameplayTask;
+                }
 
-            // 4. Закрываем игру
-            this.Close();
+                // 4. Возвращаемся в меню (или закрываем игру)
+                this.Invoke((MethodInvoker)delegate
+                {
+                    this.Close();
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при запуске игры: {ex.Message}", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Invoke((MethodInvoker)delegate
+                {
+                    this.Close();
+                });
+            }
         }
 
         private void ShowGameInstructions()
@@ -135,8 +165,6 @@ namespace Rac_Night
                 "3. Чтобы прогнать призрака - светите на него фонариком 2 секунды\n" +
                 "4. Енот может заболеть если 2+ параметра упадут до 0\n" +
                 "5. Цель: пережить ночь до 6 утра\n\n" +
-                "6. Опастное время с 02:00 до 04:00" +
-                "В это время призраки куда активнее)" +
                 "УДАЧИ!";
 
             MessageBox.Show(instructions, "ИНСТРУКЦИЯ",

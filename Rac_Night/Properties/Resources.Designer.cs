@@ -191,16 +191,6 @@ namespace Rac_Night.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Без_имени {
-            get {
-                object obj = ResourceManager.GetObject("Без имени", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap комната_енота {
             get {
                 object obj = ResourceManager.GetObject("комната_енота", resourceCulture);
@@ -214,6 +204,16 @@ namespace Rac_Night.Properties {
         internal static System.Drawing.Bitmap монитор {
             get {
                 object obj = ResourceManager.GetObject("монитор", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Окружение {
+            get {
+                object obj = ResourceManager.GetObject("Окружение", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

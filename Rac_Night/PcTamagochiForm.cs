@@ -15,7 +15,7 @@ namespace Rac_Night
         private Label lblSicknessTimer;
         private Label lblMedicines;
         private Panel _restartOverlay;
-        private Label lblTimeDisplay;
+        //private Label lblTimeDisplay;
         private Panel _backgroundPanel;
 
         private enum RaccoonActionState
@@ -64,7 +64,7 @@ namespace Rac_Night
             _tama.StatsChanged += Tama_StatsChanged;
             _tama.SicknessStatusChanged += Tama_SicknessStatusChanged;
             GameManager.Instance.MedicinesUpdated += GameManager_MedicinesUpdated;
-            GameManager.Instance.GameTimeUpdated += GameManager_GameTimeUpdated;
+            //GameManager.Instance.GameTimeUpdated += GameManager_GameTimeUpdated;
 
             // Оверлей для перезагрузки
             _restartOverlay = new Panel();
@@ -77,7 +77,7 @@ namespace Rac_Night
             // Первоначальное обновление UI
             UpdateUI();
             UpdateSicknessUI();
-            UpdateTimeDisplay();
+            //UpdateTimeDisplay();
         }
 
         private void InitializeTamagochiControls()
@@ -263,16 +263,16 @@ namespace Rac_Night
             }
         }
 
-        private void GameManager_GameTimeUpdated(object sender, EventArgs e)
-        {
-            if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                if (this.InvokeRequired)
-                    this.BeginInvoke(new Action(UpdateTimeDisplay));
-                else
-                    UpdateTimeDisplay();
-            }
-        }
+        //private void GameManager_GameTimeUpdated(object sender, EventArgs e)
+        //{
+        //    if (this.IsHandleCreated && !this.IsDisposed)
+        //    {
+        //        if (this.InvokeRequired)
+        //            this.BeginInvoke(new Action(UpdateTimeDisplay));
+        //        else
+        //            UpdateTimeDisplay();
+        //    }
+        //}
 
         private void UpdateUI()
         {
@@ -380,27 +380,27 @@ namespace Rac_Night
             catch { }
         }
 
-        private void UpdateTimeDisplay()
-        {
-            try
-            {
-                if (lblTimeDisplay != null && !lblTimeDisplay.IsDisposed)
-                {
-                    lblTimeDisplay.Text = $"ВРЕМЯ: {GameManager.Instance.CurrentGameTime:hh\\:mm}";
-                    // Меняем цвет в зависимости от времени
-                    int hour = GameManager.Instance.CurrentGameTime.Hours;
-                    if (hour >= 0 && hour < 6)
-                        lblTimeDisplay.ForeColor = Color.Red; // Ночь
-                    else if (hour >= 6 && hour < 12)
-                        lblTimeDisplay.ForeColor = Color.Lime; // Утро
-                    else if (hour >= 12 && hour < 18)
-                        lblTimeDisplay.ForeColor = Color.Orange; // День
-                    else
-                        lblTimeDisplay.ForeColor = Color.Purple; // Вечер
-                }
-            }
-            catch { }
-        }
+        //private void UpdateTimeDisplay()
+        //{
+        //    try
+        //    {
+        //        if (lblTimeDisplay != null && !lblTimeDisplay.IsDisposed)
+        //        {
+        //            lblTimeDisplay.Text = $"ВРЕМЯ: {GameManager.Instance.CurrentGameTime:hh\\:mm}";
+        //            // Меняем цвет в зависимости от времени
+        //            int hour = GameManager.Instance.CurrentGameTime.Hours;
+        //            if (hour >= 0 && hour < 6)
+        //                lblTimeDisplay.ForeColor = Color.Red; // Ночь
+        //            else if (hour >= 6 && hour < 12)
+        //                lblTimeDisplay.ForeColor = Color.Lime; // Утро
+        //            else if (hour >= 12 && hour < 18)
+        //                lblTimeDisplay.ForeColor = Color.Orange; // День
+        //            else
+        //                lblTimeDisplay.ForeColor = Color.Purple; // Вечер
+        //        }
+        //    }
+        //    catch { }
+        //}
 
         // Обработчики кнопок
         private void btnFeed_Click(object sender, EventArgs e)
@@ -441,19 +441,23 @@ namespace Rac_Night
                 return;
             }
 
-            if (GameManager.Instance.TryUseMedicine())
-            {
-                _tama.Cure();
+            GameManager.Instance.TryUseMedicine();
 
-                // Визуальный эффект лечения
-                ShowHealingEffect();
+            _tama.Cure();
 
-                MessageBox.Show("ЕНОТ ВЫЛЕЧЕН! ПАРАМЕТРЫ ВОССТАНОВЛЕНЫ.", "УСПЕХ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            _tama.Heal(50);
+            _tama.Feed(50);
+            _tama.PlayWith(50);
+            _tama.Wash(50);
 
-                UpdateSicknessUI();
-                UpdateUI();
-            }
+            _currentAction = RaccoonActionState.Healing;
+            StartActionAnimationTimer();
+
+            MessageBox.Show("ЕНОТ ВЫЛЕЧЕН! ПАРАМЕТРЫ ВОССТАНОВЛЕНЫ.", "УСПЕХ",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            UpdateSicknessUI();
+            UpdateUI();
         }
 
         private void ShowHealingEffect()
@@ -524,7 +528,11 @@ namespace Rac_Night
                     case RaccoonActionState.Washing:
                         image = TryLoadResourceImage("raccoon_washing_anim") ?? CreateFallbackImage("МОЕТСЯ", Color.Cyan);
                         break;
+                    case RaccoonActionState.Healing:
+                        image = TryLoadResourceImage("raccoon_healing_anim") ?? CreateFallbackImage("ЛЕЧИТСЯ", Color.Magenta);
+                        break;
                     case RaccoonActionState.None:
+                        // ПРОСТАЯ ЛОГИКА: если здоровье низкое или енот болен - показываем больного
                         if (_tama.IsSick || _tama.Health < 30)
                         {
                             image = TryLoadResourceImage("raccoon_sick") ?? CreateFallbackImage("БОЛЕН", Color.Red);
@@ -676,7 +684,7 @@ namespace Rac_Night
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.MedicinesUpdated -= GameManager_MedicinesUpdated;
-                GameManager.Instance.GameTimeUpdated -= GameManager_GameTimeUpdated;
+                //GameManager.Instance.GameTimeUpdated -= GameManager_GameTimeUpdated;
             }
 
             // Останавливаем и освобождаем таймер

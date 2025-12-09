@@ -91,12 +91,6 @@ namespace Rac_Night
         {
             if (!IsSick) return;
 
-            // Восстанавливаем только нулевые параметры до 30%
-            if (Hunger <= 0) Hunger = 30;
-            if (Play <= 0) Play = 30;
-            if (Hygiene <= 0) Hygiene = 30;
-            if (Health <= 0) Health = 30;
-
             SetSickness(false);
             OnStatsChanged();
         }
