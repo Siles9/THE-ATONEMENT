@@ -491,5 +491,11 @@ namespace Rac_Night
                 patrickStarPicture.Location = new Point(this.Width - 70, 80);
             }
         }
+
+        private void btnExit_Click(object sender, EventArgs e)
+        {
+            StopMenuMusic();
+            this.Close();
+        }
     }
 }
