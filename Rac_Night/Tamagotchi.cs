@@ -44,10 +44,8 @@ namespace Rac_Night
         private const double PlayDecayPerMinute = 0.9;
         private const double HygieneDecayPerMinute = 0.8;
         private const double HealthDecayPerMinute = 0.00;
+        private const double CriticalDecayMultiplier = 1.15;
 
-        private const double CriticalDecayMultiplier = 1.15; // +15% при критическом состоянии
-
-        // Метод для сброса состояния
         public void Reset()
         {
             _hunger = 100;
@@ -90,7 +88,6 @@ namespace Rac_Night
         public void Cure()
         {
             if (!IsSick) return;
-
             SetSickness(false);
             OnStatsChanged();
         }
@@ -109,45 +106,45 @@ namespace Rac_Night
             OnStatsChanged();
         }
 
-        public void DecreaseStats(TimeSpan elapsed)
+        public void DecreaseStats(TimeSpan elapsed, float difficultyMultiplier = 1.0f)
         {
             double minutes = Math.Max(0, elapsed.TotalMinutes);
             if (minutes <= 0) return;
 
-            // Проверяем, есть ли нулевые параметры для множителя
             bool hasZeroStat = Hunger <= 0 || Play <= 0 || Hygiene <= 0 || Health <= 0;
-            double decayMultiplier = hasZeroStat ? CriticalDecayMultiplier : 1.0;
+            double decayMultiplier = hasZeroStat ? CriticalDecayMultiplier : 1.0f;
 
-            // Падение параметров (несинхронно)
+            // Умножаем скорость падения на множитель сложности
+            decayMultiplier *= difficultyMultiplier;
+
             Hunger -= HungerDecayPerMinute * minutes * decayMultiplier;
             Play -= PlayDecayPerMinute * minutes * decayMultiplier;
             Hygiene -= HygieneDecayPerMinute * minutes * decayMultiplier;
 
-            // Здоровье падает медленно и только при очень низких других параметрах
             double extraHealthDecay = 0;
             if (Hunger < 5) extraHealthDecay += 0.3;
             if (Play < 5) extraHealthDecay += 0.15;
             if (Hygiene < 5) extraHealthDecay += 0.2;
 
-            Health -= (HealthDecayPerMinute + extraHealthDecay) * minutes;
+            Health -= (HealthDecayPerMinute + extraHealthDecay) * minutes * difficultyMultiplier;
 
-            // Обновляем состояние
             UpdateCriticalState();
             OnStatsChanged();
         }
 
         private void UpdateCriticalState()
         {
-            // Считаем нулевые параметры
+            // Исправлено: считаем параметры, которые меньше или равны 1 (а не 0)
+            // чтобы болезнь появлялась, когда параметры почти нулевые
             int newZeroStatCount = 0;
-            if (Hunger <= 0) newZeroStatCount++;
-            if (Play <= 0) newZeroStatCount++;
-            if (Hygiene <= 0) newZeroStatCount++;
-            if (Health <= 0) newZeroStatCount++;
+            if (Hunger <= 1) newZeroStatCount++;
+            if (Play <= 1) newZeroStatCount++;
+            if (Hygiene <= 1) newZeroStatCount++;
+            if (Health <= 1) newZeroStatCount++;
 
             ZeroStatCount = newZeroStatCount;
 
-            // Логика болезни
+            // Болезнь появляется, если 2 или более параметра на нуле
             if (ZeroStatCount >= 2 && !IsSick)
             {
                 SetSickness(true);

@@ -189,12 +189,40 @@ namespace Rac_Night.Properties {
         }
         
         /// <summary>
+        ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream атака_призрака {
+            get {
+                return ResourceManager.GetStream("атака_призрака", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap звезда {
+            get {
+                object obj = ResourceManager.GetObject("звезда", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap комната_енота {
             get {
                 object obj = ResourceManager.GetObject("комната_енота", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream Меню_музыка {
+            get {
+                return ResourceManager.GetStream("Меню_музыка", resourceCulture);
             }
         }
         
@@ -214,6 +242,16 @@ namespace Rac_Night.Properties {
         internal static System.Drawing.Bitmap Окружение {
             get {
                 object obj = ResourceManager.GetObject("Окружение", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap патрик_звезда {
+            get {
+                object obj = ResourceManager.GetObject("патрик_звезда", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -255,6 +293,25 @@ namespace Rac_Night.Properties {
             get {
                 object obj = ResourceManager.GetObject("призрак_чёрный", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Рик_Ролл {
+            get {
+                object obj = ResourceManager.GetObject("Рик_Ролл", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.IO.UnmanagedMemoryStream, аналогичного System.IO.MemoryStream.
+        /// </summary>
+        internal static System.IO.UnmanagedMemoryStream Рик_Ролл_звук {
+            get {
+                return ResourceManager.GetStream("Рик_Ролл_звук", resourceCulture);
             }
         }
         
