@@ -4,35 +4,15 @@ namespace Rac_Night
 {
     public class Tamagotchi
     {
-        // Параметры
         private double _hunger = 100;
         private double _play = 100;
         private double _hygiene = 100;
         private double _health = 100;
 
-        public double Hunger
-        {
-            get => _hunger;
-            private set => _hunger = Clamp(value);
-        }
-
-        public double Play
-        {
-            get => _play;
-            private set => _play = Clamp(value);
-        }
-
-        public double Hygiene
-        {
-            get => _hygiene;
-            private set => _hygiene = Clamp(value);
-        }
-
-        public double Health
-        {
-            get => _health;
-            private set => _health = Clamp(value);
-        }
+        public double Hunger => _hunger;
+        public double Play => _play;
+        public double Hygiene => _hygiene;
+        public double Health => _health;
 
         public bool IsSick { get; private set; } = false;
         public int ZeroStatCount { get; private set; } = 0;
@@ -40,11 +20,9 @@ namespace Rac_Night
         public event EventHandler StatsChanged;
         public event EventHandler SicknessStatusChanged;
 
-        private const double HungerDecayPerMinute = 1.0;
-        private const double PlayDecayPerMinute = 0.9;
-        private const double HygieneDecayPerMinute = 0.8;
-        private const double HealthDecayPerMinute = 0.00;
-        private const double CriticalDecayMultiplier = 1.15;
+        private const double BaseHungerDecayPerMinute = 1.5;
+        private const double BasePlayDecayPerMinute = 1.3;
+        private const double BaseHygieneDecayPerMinute = 1.2;
 
         public void Reset()
         {
@@ -60,73 +38,66 @@ namespace Rac_Night
         public void Feed(double amount = 50)
         {
             if (amount <= 0) return;
-            Hunger += amount;
+            _hunger = Clamp(_hunger + amount);
             OnStatsChanged();
         }
 
         public void PlayWith(double amount = 40)
         {
             if (amount <= 0) return;
-            Play += amount;
+            _play = Clamp(_play + amount);
             OnStatsChanged();
         }
 
         public void Wash(double amount = 55)
         {
             if (amount <= 0) return;
-            Hygiene += amount;
+            _hygiene = Clamp(_hygiene + amount);
             OnStatsChanged();
         }
 
         public void Heal(double amount = 60)
         {
             if (amount <= 0) return;
-            Health += amount;
+            _health = Clamp(_health + amount);
             OnStatsChanged();
         }
 
         public void Cure()
         {
             if (!IsSick) return;
-            SetSickness(false);
+            IsSick = false;
+            SicknessStatusChanged?.Invoke(this, EventArgs.Empty);
             OnStatsChanged();
         }
 
         public void DecreaseAllStatsByPercentage(double percentage)
         {
             if (percentage <= 0) return;
-
             double amount = percentage / 100.0;
-            Hunger -= Hunger * amount;
-            Play -= Play * amount;
-            Hygiene -= Hygiene * amount;
-            Health -= Health * amount;
-
+            _hunger = Clamp(_hunger - (_hunger * amount));
+            _play = Clamp(_play - (_play * amount));
+            _hygiene = Clamp(_hygiene - (_hygiene * amount));
+            _health = Clamp(_health - (_health * amount));
             UpdateCriticalState();
             OnStatsChanged();
         }
 
-        public void DecreaseStats(TimeSpan elapsed, float difficultyMultiplier = 1.0f)
+        public void DecreaseStats(TimeSpan elapsed)
         {
             double minutes = Math.Max(0, elapsed.TotalMinutes);
             if (minutes <= 0) return;
 
-            bool hasZeroStat = Hunger <= 0 || Play <= 0 || Hygiene <= 0 || Health <= 0;
-            double decayMultiplier = hasZeroStat ? CriticalDecayMultiplier : 1.0f;
+            _hunger = Clamp(_hunger - (BaseHungerDecayPerMinute * minutes));
+            _play = Clamp(_play - (BasePlayDecayPerMinute * minutes));
+            _hygiene = Clamp(_hygiene - (BaseHygieneDecayPerMinute * minutes));
 
-            // Умножаем скорость падения на множитель сложности
-            decayMultiplier *= difficultyMultiplier;
+            double healthDecay = 0;
+            if (_hunger < 30) healthDecay += 0.3;
+            if (_play < 30) healthDecay += 0.2;
+            if (_hygiene < 30) healthDecay += 0.25;
 
-            Hunger -= HungerDecayPerMinute * minutes * decayMultiplier;
-            Play -= PlayDecayPerMinute * minutes * decayMultiplier;
-            Hygiene -= HygieneDecayPerMinute * minutes * decayMultiplier;
-
-            double extraHealthDecay = 0;
-            if (Hunger < 5) extraHealthDecay += 0.3;
-            if (Play < 5) extraHealthDecay += 0.15;
-            if (Hygiene < 5) extraHealthDecay += 0.2;
-
-            Health -= (HealthDecayPerMinute + extraHealthDecay) * minutes * difficultyMultiplier;
+            _health = Clamp(_health - (healthDecay * minutes));
 
             UpdateCriticalState();
             OnStatsChanged();
@@ -134,37 +105,24 @@ namespace Rac_Night
 
         private void UpdateCriticalState()
         {
-            // Исправлено: считаем параметры, которые меньше или равны 1 (а не 0)
-            // чтобы болезнь появлялась, когда параметры почти нулевые
             int newZeroStatCount = 0;
-            if (Hunger <= 1) newZeroStatCount++;
-            if (Play <= 1) newZeroStatCount++;
-            if (Hygiene <= 1) newZeroStatCount++;
-            if (Health <= 1) newZeroStatCount++;
+            if (_hunger <= 15) newZeroStatCount++;
+            if (_play <= 15) newZeroStatCount++;
+            if (_hygiene <= 15) newZeroStatCount++;
+            if (_health <= 15) newZeroStatCount++;
 
             ZeroStatCount = newZeroStatCount;
 
-            // Болезнь появляется, если 2 или более параметра на нуле
             if (ZeroStatCount >= 2 && !IsSick)
             {
-                SetSickness(true);
-            }
-        }
-
-        private void SetSickness(bool isSick)
-        {
-            if (IsSick != isSick)
-            {
-                IsSick = isSick;
+                IsSick = true;
                 SicknessStatusChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
         private double Clamp(double value)
         {
-            if (value < 0) return 0;
-            if (value > 100) return 100;
-            return value;
+            return Math.Max(0, Math.Min(100, value));
         }
 
         protected void OnStatsChanged()

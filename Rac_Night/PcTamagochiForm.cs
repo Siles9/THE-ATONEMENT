@@ -8,8 +8,6 @@ namespace Rac_Night
     public partial class PcTamagochiForm : Form
     {
         private Tamagotchi _tama;
-
-        // Элементы UI
         private PictureBox pictureBoxRaccoon;
         private ProgressBar progressBarHunger, progressBarPlay, progressBarHygiene, progressBarHealth;
         private Label lblHungerValue, lblPlayValue, lblHygieneValue, lblHealthValue;
@@ -38,6 +36,13 @@ namespace Rac_Night
             this.KeyDown += new KeyEventHandler(PcTamagochiForm_KeyDown);
 
             _tama = GameManager.Instance.CurrentTamagotchi;
+
+            if (_tama == null)
+            {
+                MessageBox.Show("Tamagotchi is null! Creating new one...");
+                GameManager.Instance.ResetGame(1);
+                _tama = GameManager.Instance.CurrentTamagotchi;
+            }
 
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -79,27 +84,22 @@ namespace Rac_Night
             int progressBarHeight = 30;
             int spacing = 40;
 
-            // Кормление
             progressBarHunger = CreateProgressBarWithLabel("Желудок", new Point(startX, startY),
                 progressBarWidth, progressBarHeight, Color.Orange);
             lblHungerValue = CreateValueLabel(new Point(startX + progressBarWidth + 10, startY + 5), "100%");
 
-            // Игра
             progressBarPlay = CreateProgressBarWithLabel("Настроение", new Point(startX + progressBarWidth + spacing + 100, startY),
                 progressBarWidth, progressBarHeight, Color.DodgerBlue);
             lblPlayValue = CreateValueLabel(new Point(startX + progressBarWidth + spacing + 100 + progressBarWidth + 10, startY + 5), "100%");
 
-            // Чистота
             progressBarHygiene = CreateProgressBarWithLabel("Чистота", new Point(startX, startY + 100),
                 progressBarWidth, progressBarHeight, Color.MediumAquamarine);
             lblHygieneValue = CreateValueLabel(new Point(startX + progressBarWidth + 10, startY + 100 + 5), "100%");
 
-            // Здоровье
             progressBarHealth = CreateProgressBarWithLabel("Здоровье", new Point(startX + progressBarWidth + spacing + 100, startY + 100),
                 progressBarWidth, progressBarHeight, Color.Crimson);
             lblHealthValue = CreateValueLabel(new Point(startX + progressBarWidth + spacing + 100 + progressBarWidth + 10, startY + 100 + 5), "100%");
 
-            // Енот
             pictureBoxRaccoon = new PictureBox();
             pictureBoxRaccoon.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBoxRaccoon.Size = new Size(450, 450);
@@ -110,7 +110,6 @@ namespace Rac_Night
             pictureBoxRaccoon.BackColor = Color.Transparent;
             _backgroundPanel.Controls.Add(pictureBoxRaccoon);
 
-            // Кнопки
             int buttonWidth = 180;
             int buttonHeight = 55;
             int buttonSpacing = 25;
@@ -128,7 +127,6 @@ namespace Rac_Night
                 buttonWidth, buttonHeight, BtnCure_Click, Color.DarkRed);
             btnCure.Enabled = false;
 
-            // Лекарства
             lblMedicines = new Label();
             lblMedicines.Text = $"ЛЕКАРСТВА: {GameManager.Instance.MedicinesLeft}";
             lblMedicines.Location = new Point(_backgroundPanel.Width - 250, buttonsStartY - 50);
@@ -138,7 +136,6 @@ namespace Rac_Night
             lblMedicines.AutoSize = true;
             _backgroundPanel.Controls.Add(lblMedicines);
 
-            // Таймер болезни
             lblSicknessTimer = new Label();
             lblSicknessTimer.Text = "ЕНОТ БОЛЕН!";
             lblSicknessTimer.Location = new Point(_backgroundPanel.Width / 2 - 200, 50);
@@ -150,7 +147,6 @@ namespace Rac_Night
             lblSicknessTimer.Visible = false;
             _backgroundPanel.Controls.Add(lblSicknessTimer);
 
-            // Заголовок
             Label titleLabel = new Label();
             titleLabel.Text = "МОНИТОР ЕНОТА";
             titleLabel.Font = new Font("Arial", 32, FontStyle.Bold);
@@ -196,7 +192,6 @@ namespace Rac_Night
             lbl.AutoSize = true;
             lbl.BackColor = Color.Transparent;
             _backgroundPanel.Controls.Add(lbl);
-
             return lbl;
         }
 
@@ -215,7 +210,6 @@ namespace Rac_Night
             button.FlatAppearance.MouseDownBackColor = baseColor;
             button.FlatAppearance.MouseOverBackColor = Color.FromArgb(baseColor.R / 2, baseColor.G / 2, baseColor.B / 2);
             _backgroundPanel.Controls.Add(button);
-
             return button;
         }
 
@@ -252,7 +246,7 @@ namespace Rac_Night
             }
         }
 
-        private void UpdateUI()
+        public void UpdateUI()
         {
             try
             {
@@ -282,7 +276,7 @@ namespace Rac_Night
                     lblHealthValue.Text = $"{healthValue}%";
 
                 UpdateProgressBarColors(hungerValue, playValue, hygieneValue, healthValue);
-                UpdateSicknessUI(); // Важно: обновляем кнопку лечения при каждом изменении параметров
+                UpdateSicknessUI();
                 UpdateRaccoonAnimation();
             }
             catch { }
@@ -392,51 +386,12 @@ namespace Rac_Night
             _tama.Feed(50);
             _tama.PlayWith(50);
             _tama.Wash(50);
-
             _currentAction = RaccoonActionState.Healing;
             StartActionAnimationTimer();
-
             MessageBox.Show("ЕНОТ ВЫЛЕЧЕН! ПАРАМЕТРЫ ВОССТАНОВЛЕНЫ.", "УСПЕХ",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
-
             UpdateSicknessUI();
             UpdateUI();
-        }
-
-        private void ShowHealingEffect()
-        {
-            Panel healEffect = new Panel();
-            healEffect.Size = new Size(450, 450);
-            healEffect.Location = pictureBoxRaccoon.Location;
-            healEffect.BackColor = Color.Transparent;
-            _backgroundPanel.Controls.Add(healEffect);
-            healEffect.BringToFront();
-
-            Timer effectTimer = new Timer();
-            effectTimer.Interval = 50;
-            int alpha = 255;
-
-            effectTimer.Tick += (s, e) =>
-            {
-                using (Graphics g = healEffect.CreateGraphics())
-                {
-                    g.Clear(Color.Transparent);
-                    using (Pen pen = new Pen(Color.FromArgb(alpha, Color.Lime), 5))
-                    {
-                        g.DrawEllipse(pen, 10, 10, healEffect.Width - 20, healEffect.Height - 20);
-                    }
-                }
-
-                alpha -= 15;
-                if (alpha <= 0)
-                {
-                    effectTimer.Stop();
-                    effectTimer.Dispose();
-                    _backgroundPanel.Controls.Remove(healEffect);
-                    healEffect.Dispose();
-                }
-            };
-            effectTimer.Start();
         }
 
         private void StartActionAnimationTimer()
@@ -543,19 +498,14 @@ namespace Rac_Night
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.Clear(Color.FromArgb(30, 30, 40));
-
                 g.FillEllipse(new SolidBrush(Color.FromArgb(60, 60, 70)), 50, 50, 350, 350);
-
                 g.FillEllipse(new SolidBrush(Color.Gray), 100, 80, 80, 80);
                 g.FillEllipse(new SolidBrush(Color.Gray), 270, 80, 80, 80);
-
                 g.FillEllipse(Brushes.Black, 150, 180, 60, 60);
                 g.FillEllipse(Brushes.Black, 240, 180, 60, 60);
                 g.FillEllipse(Brushes.White, 160, 190, 20, 20);
                 g.FillEllipse(Brushes.White, 250, 190, 20, 20);
-
                 g.FillEllipse(Brushes.Black, 210, 280, 40, 30);
-
                 g.DrawString(text, new Font("Arial", 24, FontStyle.Bold), new SolidBrush(color), 150, 350);
             }
             return bmp;
@@ -572,7 +522,6 @@ namespace Rac_Night
             {
                 var result = MessageBox.Show("Закрыть монитор енота?", "Подтверждение",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
                 if (result == DialogResult.Yes)
                 {
                     this.Close();

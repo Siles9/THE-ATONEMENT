@@ -13,25 +13,16 @@ namespace Rac_Night
         private List<Point> cloudPositions = new List<Point>();
         private SoundPlayer menuMusicPlayer;
         private PictureBox starPicture;
-        private PictureBox patrickStarPicture; // Вторая звездочка "Патрик"
+        private PictureBox patrickStarPicture;
 
         public MenuForm()
         {
             InitializeComponent();
-
-            // ВАЖНО: Разрешаем форме перехватывать события клавиатуры
             this.KeyPreview = true;
-
             SetupEventHandlers();
             this.Paint += MenuForm_Paint;
-
-            // Загружаем прогресс
             ProgressManager.LoadProgress();
-
-            // Инициализируем звездочки
             InitializeStars();
-
-            // Обновляем доступность кнопки "Продолжить игру"
             UpdateContinueButton();
         }
 
@@ -42,22 +33,18 @@ namespace Rac_Night
             btnSettings.Click += (sender, e) => HandleButtonClick("Настройки");
             btnAuthors.Click += (sender, e) => HandleButtonClick("Авторы");
             btnExit.Click += (sender, e) => HandleButtonClick("Выход");
-
-            // Также подписываемся на KeyDown у самой формы
             this.KeyDown += MenuForm_KeyDown;
         }
 
         private void MenuForm_KeyDown(object sender, KeyEventArgs e)
         {
-            // Проверяем обе комбинации
             if (e.Control && e.Shift && e.KeyCode == Keys.Z)
             {
                 OpenDeveloperMenu();
-                e.Handled = true; // Помечаем как обработанное
-                e.SuppressKeyPress = true; // Подавляем дальнейшую обработку
+                e.Handled = true;
+                e.SuppressKeyPress = true;
             }
 
-            // Русская буква "ъ" обычно Key.Oem6 (клавиша ]) с Shift
             if (e.KeyCode == Keys.Oem6 && e.Shift)
             {
                 OpenDeveloperMenu();
@@ -65,7 +52,6 @@ namespace Rac_Night
                 e.SuppressKeyPress = true;
             }
 
-            // Альтернативная клавиша для "ъ" - Oemtilde (клавиша `/~)
             if (e.KeyCode == Keys.Oemtilde && e.Shift)
             {
                 OpenDeveloperMenu();
@@ -118,10 +104,7 @@ namespace Rac_Night
 
         private void InitializeStars()
         {
-            // Первая звездочка (за 1-ю ночь)
             InitializeFirstStar();
-
-            // Вторая звездочка "Патрик" (за 6-ю ночь)
             InitializePatrickStar();
         }
 
@@ -157,14 +140,13 @@ namespace Rac_Night
         private void InitializePatrickStar()
         {
             patrickStarPicture = new PictureBox();
-            patrickStarPicture.Size = new Size(60, 60); // Немного больше
-            patrickStarPicture.Location = new Point(this.Width - 70, 80); // Под первой звездой
+            patrickStarPicture.Size = new Size(60, 60);
+            patrickStarPicture.Location = new Point(this.Width - 70, 80);
             patrickStarPicture.SizeMode = PictureBoxSizeMode.Zoom;
             patrickStarPicture.Visible = ProgressManager.Progress.BonusNightCompleted;
 
             try
             {
-                // Пробуем загрузить специальную звезду "Патрик"
                 object patrickResource = Properties.Resources.ResourceManager.GetObject("патрик_звезда");
                 if (patrickResource is Image)
                 {
@@ -172,7 +154,6 @@ namespace Rac_Night
                 }
                 else
                 {
-                    // Если нет специальной, создаем звезду Патрика
                     CreatePatrickStar();
                 }
             }
@@ -184,7 +165,6 @@ namespace Rac_Night
             this.Controls.Add(patrickStarPicture);
             patrickStarPicture.BringToFront();
 
-            // Добавляем подсказку при наведении
             ToolTip toolTip = new ToolTip();
             toolTip.SetToolTip(patrickStarPicture, "Патрик - за прохождение бонусной ночи!");
         }
@@ -218,8 +198,6 @@ namespace Rac_Night
             using (Graphics g = Graphics.FromImage(patrick))
             {
                 g.Clear(Color.Transparent);
-
-                // Рисуем звезду Патрика (розового цвета)
                 PointF[] starPoints = {
                     new PointF(30, 5),
                     new PointF(35, 20),
@@ -233,11 +211,9 @@ namespace Rac_Night
                     new PointF(25, 20)
                 };
                 g.FillPolygon(new SolidBrush(Color.HotPink), starPoints);
-
-                // Рисуем лицо Патрика
-                g.FillEllipse(Brushes.Pink, 25, 25, 10, 10); // Глаз
-                g.FillEllipse(Brushes.Pink, 35, 25, 10, 10); // Глаз
-                g.DrawArc(new Pen(Color.Black, 2), 25, 35, 20, 10, 0, 180); // Улыбка
+                g.FillEllipse(Brushes.Pink, 25, 25, 10, 10);
+                g.FillEllipse(Brushes.Pink, 35, 25, 10, 10);
+                g.DrawArc(new Pen(Color.Black, 2), 25, 35, 20, 10, 0, 180);
             }
             patrickStarPicture.Image = patrick;
         }
@@ -246,14 +222,12 @@ namespace Rac_Night
         {
             try
             {
-                // Останавливаем предыдущую музыку если играет
                 if (menuMusicPlayer != null)
                 {
                     menuMusicPlayer.Stop();
                     menuMusicPlayer.Dispose();
                 }
 
-                // Пробуем загрузить музыку
                 object musicResource = Properties.Resources.ResourceManager.GetObject("Меню_музыка");
                 if (musicResource != null)
                 {
@@ -272,10 +246,7 @@ namespace Rac_Night
                     }
                 }
             }
-            catch
-            {
-                // Если музыка не найдена, ничего не делаем
-            }
+            catch { }
         }
 
         private void UpdateContinueButton()
@@ -323,8 +294,6 @@ namespace Rac_Night
             try
             {
                 this.Hide();
-
-                // Останавливаем музыку меню
                 StopMenuMusic();
 
                 if (showCutscene)
@@ -334,26 +303,37 @@ namespace Rac_Night
                         var cutsceneTask = Task.Run(() => cutsceneForm.ShowDialog());
                         await cutsceneTask;
                     }
-
                     await Task.Delay(2000);
                     ShowGameInstructions();
                 }
                 else
                 {
                     int medicines = GetMedicinesForNight(nightNumber);
-                    MessageBox.Show($"Начинается Ночь #{nightNumber}!\n\n" +
-                                  $"Лекарств: {medicines}\n" +
-                                  $"Удачи!",
-                                  $"Ночь {nightNumber}",
-                                  MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    float difficulty = GameManager.Instance.DifficultyMultiplier;
+
+                    //string difficultyInfo = "";
+                    //if (nightNumber == 1) difficultyInfo = " (Лёгкая)";
+                    //else if (nightNumber == 2) difficultyInfo = " (Средняя)";
+                    //else if (nightNumber == 3) difficultyInfo = " (Сложная)";
+                    //else if (nightNumber == 4) difficultyInfo = " (Очень сложная)";
+                    //else if (nightNumber == 5) difficultyInfo = " (Экстремальная)";
+                    //else if (nightNumber == 6) difficultyInfo = " (Бонусная ночь)";
+
+                    //MessageBox.Show($"Начинается Ночь #{nightNumber}{difficultyInfo}!\n\n" +
+                    //               $"Множитель сложности: {difficulty:F1}x\n" +
+                    //               $"Лекарств: {medicines}\n" +
+                    //               $"Параметры падают на {difficulty:F1}x быстрее\n" +
+                    //               $"Призраки появляются чаще\n" +
+                    //               $"Удачи!",
+                    //    $"Ночь {nightNumber}",
+                    //    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
 
                 using (GameplayForm gameplayForm = new GameplayForm())
                 {
+                    GameManager.Instance.ResetGame(nightNumber);
                     var gameplayTask = Task.Run(() => gameplayForm.ShowDialog());
                     await Task.Delay(100);
-
-                    GameManager.Instance.ResetGame(nightNumber);
                     gameplayForm.StartGameTimers();
                     await gameplayTask;
                 }
@@ -365,22 +345,16 @@ namespace Rac_Night
             }
             finally
             {
-                // После закрытия GameplayForm показываем меню
                 this.Show();
-
-                // Обновляем звездочки и кнопку прогресс
                 ProgressManager.LoadProgress();
                 UpdateStarsVisibility();
                 UpdateContinueButton();
-
-                // ВКЛЮЧАЕМ МУЗЫКУ МЕНЮ
                 StartMenuMusic();
             }
         }
 
         private void UpdateStarsVisibility()
         {
-            // Обновляем видимость обеих звездочек
             if (starPicture != null)
             {
                 starPicture.Visible = ProgressManager.Progress.IsFirstNightCompleted;
@@ -428,7 +402,6 @@ namespace Rac_Night
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            // Запускаем музыку при показе формы
             StartMenuMusic();
         }
 
@@ -446,29 +419,25 @@ namespace Rac_Night
         {
             try
             {
-                // Создаем и показываем меню разработчика
                 DeveloperMenuForm devMenu = new DeveloperMenuForm();
                 devMenu.ShowDialog();
-
-                // После закрытия меню разработчика обновляем прогресс
                 ProgressManager.LoadProgress();
                 UpdateStarsVisibility();
                 UpdateContinueButton();
 
-                // Показываем сообщение об успешном обновлении
                 MessageBox.Show("Прогресс обновлен!\n" +
-                              $"Пройдено ночей: {ProgressManager.Progress.NightsCompleted}\n" +
-                              $"Бонусная ночь: {(ProgressManager.Progress.BonusNightCompleted ? "пройдена" : "не пройдена")}",
-                              "Информация",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Information);
+                    $"Пройдено ночей: {ProgressManager.Progress.NightsCompleted}\n" +
+                    $"Бонусная ночь: {(ProgressManager.Progress.BonusNightCompleted ? "пройдена" : "не пройдена")}",
+                    "Информация",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при открытии меню разработчика: {ex.Message}",
-                              "Ошибка",
-                              MessageBoxButtons.OK,
-                              MessageBoxIcon.Error);
+                    "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -481,7 +450,6 @@ namespace Rac_Night
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            // Обновляем позицию звездочек при изменении размера
             if (starPicture != null)
             {
                 starPicture.Location = new Point(this.Width - 70, 20);

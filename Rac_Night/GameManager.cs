@@ -9,6 +9,19 @@ namespace Rac_Night
         private static readonly object _lock = new object();
 
         private int _currentNight = 1;
+        private Tamagotchi _currentTamagotchi;
+        private TimeSpan _currentGameTime;
+        private int _medicinesLeft;
+        private Timer _gameTimer;
+        private bool _isGameActive = false;
+
+        private const int NIGHT_START_HOUR = 0;
+        private const int NIGHT_END_HOUR = 6;
+        private const int GAME_MINUTES_PER_SECOND = 2;
+
+        private float[] _decayMultipliers = { 1.0f, 1.2f, 1.5f, 1.8f, 2.0f, 2.3f };
+        private float[] _ghostSpawnMultipliers = { 1.0f, 1.3f, 1.6f, 1.9f, 2.2f, 2.5f };
+        private float[] _ghostIntervalMultipliers = { 1.0f, 0.85f, 0.7f, 0.6f, 0.5f, 0.4f };
 
         public int CurrentNight
         {
@@ -29,21 +42,6 @@ namespace Rac_Night
             }
         }
 
-        // Поля
-        private Tamagotchi _currentTamagotchi;
-        private TimeSpan _currentGameTime;
-        private int _medicinesLeft;
-        private bool _isSicknessTimerActive;
-        private Timer _gameTimer;
-        private bool _isGameActive = false;
-
-
-        // Константы для настройки времени
-        private const int NIGHT_START_HOUR = 0;
-        private const int NIGHT_END_HOUR = 6;
-        private const int GAME_MINUTES_PER_SECOND = 2;
-
-        // Свойства
         public Tamagotchi CurrentTamagotchi => _currentTamagotchi;
         public bool IsGameActive => _isGameActive;
 
@@ -59,22 +57,37 @@ namespace Rac_Night
                 }
             }
         }
+
         public float DifficultyMultiplier
         {
             get
             {
-                switch (CurrentNight)
-                {
-                    case 1: return 1.0f;  // Базовая сложность
-                    case 2: return 1.2f;  // На 20% сложнее
-                    case 3: return 1.5f;  // На 50% сложнее
-                    case 4: return 1.8f;  // На 80% сложнее
-                    case 5: return 2.0f;  // В 2 раза сложнее
-                    case 6: return 2.0f;  // Как 5-я ночь
-                    default: return 1.0f;
-                }
+                if (_currentNight >= 1 && _currentNight <= 6)
+                    return _decayMultipliers[_currentNight - 1];
+                return 1.0f;
             }
         }
+
+        public float GhostSpawnFrequencyMultiplier
+        {
+            get
+            {
+                if (_currentNight >= 1 && _currentNight <= 6)
+                    return _ghostSpawnMultipliers[_currentNight - 1];
+                return 1.0f;
+            }
+        }
+
+        public float GhostIntervalMultiplier
+        {
+            get
+            {
+                if (_currentNight >= 1 && _currentNight <= 6)
+                    return _ghostIntervalMultipliers[_currentNight - 1];
+                return 1.0f;
+            }
+        }
+
         public int MedicinesLeft
         {
             get => _medicinesLeft;
@@ -88,54 +101,20 @@ namespace Rac_Night
             }
         }
 
-        public bool IsSicknessTimerActive => _isSicknessTimerActive;
-
-        public bool IsNightTime
-        {
-            get
-            {
-                int hour = CurrentGameTime.Hours;
-                return hour >= NIGHT_START_HOUR && hour < NIGHT_END_HOUR;
-            }
-        }
-
-        public bool IsDangerTime
-        {
-            get
-            {
-                int hour = CurrentGameTime.Hours;
-                return hour >= 2 && hour < 4;
-            }
-        }
-
-        public TimeSpan TimeUntilMorning
-        {
-            get
-            {
-                TimeSpan current = CurrentGameTime;
-                TimeSpan morning = TimeSpan.FromHours(NIGHT_END_HOUR);
-                if (current < morning)
-                    return morning - current;
-                else
-                    return TimeSpan.Zero;
-            }
-        }
-
+        public bool IsNightTime => CurrentGameTime.Hours >= NIGHT_START_HOUR &&
+                                  CurrentGameTime.Hours < NIGHT_END_HOUR;
+        public bool IsDangerTime => CurrentGameTime.Hours >= 2 && CurrentGameTime.Hours < 4;
         public bool IsNightOver => CurrentGameTime.Hours >= NIGHT_END_HOUR;
 
-        // События
         public event EventHandler GameTimeUpdated;
         public event EventHandler MedicinesUpdated;
         public event EventHandler NightEnded;
 
         private GameManager()
         {
-            Initialize();
-        }
-
-        private void Initialize()
-        {
-            ResetGame();
+            _currentTamagotchi = new Tamagotchi();
+            CurrentGameTime = new TimeSpan(NIGHT_START_HOUR, 0, 0);
+            MedicinesLeft = 3;
             SetupGameTimer();
         }
 
@@ -143,100 +122,67 @@ namespace Rac_Night
         {
             _gameTimer = new Timer();
             _gameTimer.Interval = 1000;
-            _gameTimer.Tick += (s, e) => UpdateGameTime();
-            _gameTimer.Stop(); // Не запускаем сразу
+            _gameTimer.Tick += GameTimer_Tick;
+        }
+
+        private void GameTimer_Tick(object sender, EventArgs e)
+        {
+            if (!_isGameActive || _currentTamagotchi == null) return;
+
+            CurrentGameTime = CurrentGameTime.Add(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND));
+
+            float timeMultiplier = DifficultyMultiplier;
+            _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND * timeMultiplier));
+
+            if (IsNightOver)
+            {
+                StopGame();
+                NightEnded?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         public void StartGame()
         {
             _isGameActive = true;
-            _gameTimer.Start();
+
+            if (_gameTimer != null && !_gameTimer.Enabled)
+            {
+                _gameTimer.Start();
+            }
         }
 
         public void ResetGame(int nightNumber = 1)
         {
-            CurrentNight = nightNumber;
+            _currentNight = nightNumber;
 
             if (_currentTamagotchi != null)
             {
-                _currentTamagotchi.SicknessStatusChanged -= OnTamagotchiSicknessChanged;
+                _currentTamagotchi.Reset();
+            }
+            else
+            {
+                _currentTamagotchi = new Tamagotchi();
             }
 
-            _currentTamagotchi = new Tamagotchi();
             CurrentGameTime = new TimeSpan(NIGHT_START_HOUR, 0, 0);
 
-            // Количество лекарств в зависимости от ночи
             switch (nightNumber)
             {
-                case 1:
-                    MedicinesLeft = 3;
-                    break;
-                case 2:
-                    MedicinesLeft = 3;
-                    break;
-                case 3:
-                    MedicinesLeft = 2;
-                    break;
-                case 4:
-                    MedicinesLeft = 1;
-                    break;
-                case 5:
-                    MedicinesLeft = 0;
-                    break;
-                case 6:
-                    MedicinesLeft = 3;
-                    break;
-                default:
-                    MedicinesLeft = 3;
-                    break;
+                case 1: MedicinesLeft = 3; break;
+                case 2: MedicinesLeft = 3; break;
+                case 3: MedicinesLeft = 2; break;
+                case 4: MedicinesLeft = 1; break;
+                case 5: MedicinesLeft = 0; break;
+                case 6: MedicinesLeft = 3; break;
+                default: MedicinesLeft = 3; break;
             }
 
-            _isSicknessTimerActive = false;
             _isGameActive = false;
-            _currentTamagotchi.SicknessStatusChanged += OnTamagotchiSicknessChanged;
-        }
 
-        private void OnTamagotchiSicknessChanged(object sender, EventArgs e)
-        {
-            _isSicknessTimerActive = _currentTamagotchi.IsSick;
-            GameTimeUpdated?.Invoke(this, EventArgs.Empty);
-        }
-
-        private void UpdateGameTime()
-        {
-            if (!_isGameActive) return;
-            if (IsNightOver)
-            {
-                OnNightEnded();
-                return;
-            }
-
-            CurrentGameTime = CurrentGameTime.Add(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND));
-
-            // Передаем множитель сложности
-            float difficultyMultiplier = DifficultyMultiplier;
-
-            _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND), difficultyMultiplier);
-
-            if (_currentTamagotchi.IsSick)
-            {
-                _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND * 2), difficultyMultiplier);
-            }
-
-            if (IsDangerTime)
-            {
-                _currentTamagotchi.DecreaseStats(TimeSpan.FromMinutes(GAME_MINUTES_PER_SECOND), difficultyMultiplier);
-            }
-        }
-
-        private void OnNightEnded()
-        {
             if (_gameTimer != null && _gameTimer.Enabled)
             {
                 _gameTimer.Stop();
             }
-
-            NightEnded?.Invoke(this, EventArgs.Empty);
         }
 
         public bool TryUseMedicine()
@@ -254,55 +200,55 @@ namespace Rac_Night
             if (_gameTimer != null)
             {
                 _gameTimer.Stop();
-                _gameTimer.Dispose();
-                _gameTimer = null;
             }
         }
 
         public int GetRemainingNightMinutes()
         {
-            return (int)TimeUntilMorning.TotalMinutes;
-        }
-
-        public bool IsWarningTime(int minutesBefore)
-        {
-            int remainingMinutes = GetRemainingNightMinutes();
-            return remainingMinutes <= minutesBefore && remainingMinutes > 0;
-        }
-
-        public string GetTimeDescription()
-        {
-            int hour = CurrentGameTime.Hours;
-            if (hour >= 0 && hour < 2)
-                return "Ранняя ночь";
-            else if (hour >= 2 && hour < 4)
-                return "Полночь";
-            else if (hour >= 4 && hour < 6)
-                return "Предрассветное время";
-            else
-                return "Утро";
+            TimeSpan morning = TimeSpan.FromHours(NIGHT_END_HOUR);
+            TimeSpan remaining = morning - CurrentGameTime;
+            return (int)Math.Max(0, remaining.TotalMinutes);
         }
 
         public System.Drawing.Color GetTimeColor()
         {
             int hour = CurrentGameTime.Hours;
-            if (hour >= 0 && hour < 2)
-                return System.Drawing.Color.LimeGreen;
-            else if (hour >= 2 && hour < 4)
-                return System.Drawing.Color.Orange;
-            else if (hour >= 4 && hour < 6)
-                return System.Drawing.Color.Red;
-            else
-                return System.Drawing.Color.Gold;
+            if (hour >= 0 && hour < 2) return System.Drawing.Color.LimeGreen;
+            else if (hour >= 2 && hour < 4) return System.Drawing.Color.Orange;
+            else if (hour >= 4 && hour < 6) return System.Drawing.Color.Red;
+            else return System.Drawing.Color.Gold;
         }
 
-        public void AddGameTime(TimeSpan timeToAdd)
+        public float GetGhostSpawnChance(int hour)
         {
-            CurrentGameTime = CurrentGameTime.Add(timeToAdd);
-            if (IsNightOver)
-            {
-                OnNightEnded();
-            }
+            float baseChance;
+
+            if (hour >= 0 && hour < 2)
+                baseChance = 60f;
+            else if (hour >= 2 && hour < 4)
+                baseChance = 75f;
+            else if (hour >= 4 && hour < 6)
+                baseChance = 90f;
+            else
+                baseChance = 0f;
+
+            return Math.Min(100f, baseChance * GhostSpawnFrequencyMultiplier);
+        }
+
+        public int GetGhostInterval(int hour)
+        {
+            int baseInterval;
+
+            if (hour >= 0 && hour < 2)
+                baseInterval = 30000;
+            else if (hour >= 2 && hour < 4)
+                baseInterval = 25500;
+            else if (hour >= 4 && hour < 6)
+                baseInterval = 20000;
+            else
+                baseInterval = 60000;
+
+            return (int)(baseInterval * GhostIntervalMultiplier);
         }
     }
 }
