@@ -160,7 +160,7 @@ namespace Rac_Night
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            // Определяем максимальную пройденную ночь
+            // Сохранение
             int nightsCompleted = 0;
             for (int i = 0; i < 5; i++)
             {
